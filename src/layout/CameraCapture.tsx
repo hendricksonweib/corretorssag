@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Button } from "../components/Button";
 
@@ -51,7 +51,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       }
     };
   }, []);
-  
+
 
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
