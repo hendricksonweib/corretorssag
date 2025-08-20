@@ -2,19 +2,20 @@ import { InputField } from "../ui/InputField";
 import { Button } from "../components/Button";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth"; 
+import { useAuth } from "../hooks/useAuth";
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const navigate = useNavigate();
-  const { login, loading, error } = useAuth(); 
+  const { login, loading, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const success = await login(email, senha);
     if (success) {
-      navigate("/correcao"); 
+      navigate("/correcao"); // redireciona após login bem-sucedido
+    }
   };
 
   return (
@@ -22,7 +23,9 @@ export const LoginForm = () => {
       onSubmit={handleSubmit}
       className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm"
     >
-      <h1 className="text-2xl font-bold text-center text-blue-600 mb-1">SAG | Corretor (Ribamar)</h1>
+      <h1 className="text-2xl font-bold text-center text-blue-600 mb-1">
+        SAG | Corretor (Ribamar)
+      </h1>
       <p className="text-center text-sm text-gray-600 mb-6">
         Sistema de Correções de Avaliação
       </p>
@@ -42,10 +45,9 @@ export const LoginForm = () => {
         onChange={(e) => setSenha(e.target.value)}
       />
 
-      {error && <p className="text-red-600 text-center mb-4">{error}</p>} 
+      {error && <p className="text-red-600 text-center mb-4">{error}</p>}
 
       <Button label={loading ? "Carregando..." : "Entrar"} disabled={loading} />
     </form>
   );
-}
-}
+};
