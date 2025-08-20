@@ -24,7 +24,7 @@ export const Header = () => {
     <header className="bg-blue-600 text-white fixed top-0 left-0 right-0 shadow z-50">
       <div className="max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <span className="font-bold text-lg">SAG</span>
+          <span className="font-bold text-lg">SAG CORRETOR</span>
           {navItems
             .filter((item) => item.allowed)
             .map(({ name, path }) => (
