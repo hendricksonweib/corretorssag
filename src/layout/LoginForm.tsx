@@ -14,8 +14,7 @@ export const LoginForm = () => {
     e.preventDefault();
     const success = await login(email, senha);
     if (success) {
-      navigate("/dashboard");
-    }
+      navigate("/correcao"); 
   };
 
   return (
