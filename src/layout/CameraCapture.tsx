@@ -37,7 +37,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     const formData = new FormData();
     const byteImage = dataURLtoBlob(photo);
-    formData.append("imagem", byteImage, "photo.png");
+    formData.append("imagem", byteImage, "photo.png");  // Manter o formato PNG
     formData.append("numero_questoes", String(questionCount)); 
 
     try {
@@ -64,7 +64,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // Função para converter imagem base64 para Blob
   const dataURLtoBlob = (dataurl: string) => {
     const arr = dataurl.split(",");
-    const mime = "image/png";  // Garantindo que o tipo MIME seja JPEG
+    const mime = "image/png";  // Garantindo que o tipo MIME seja PNG
     const bstr = atob(arr[1]);
     const u8arr = new Uint8Array(bstr.length);
     for (let i = 0; i < bstr.length; i++) {
@@ -81,16 +81,17 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         </h2>
 
         <div className="w-full mb-4">
-         <Webcam
-  audio={false}
-  ref={webcamRef}
-  screenshotFormat="image/png"  
-  width="100%"
-  videoConstraints={{
-    facingMode: "environment", // Modo câmera traseira
-  }}
-/>
-
+          <Webcam
+            audio={false}
+            ref={webcamRef}
+            screenshotFormat="image/png"  // Manter formato PNG
+            width="100%"
+            videoConstraints={{
+              facingMode: "environment", // Modo câmera traseira
+              width: { ideal: 1920 },     // Aumentando a resolução para 1920px
+              height: { ideal: 1080 },    // Resolução de 1080px
+            }}
+          />
         </div>
 
         <Button
