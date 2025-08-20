@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";  // Importe o useNavigate
 
 interface CreateAlunoModalProps {
   alunoId: number | null;
@@ -23,6 +24,8 @@ export const CreateAlunoModal = ({ alunoId, onClose, onSuccess }: CreateAlunoMod
   const [turmaId, setTurmaId] = useState<number | "">("");
   const [escolas, setEscolas] = useState<Escola[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();  // Hook para navegação
 
   useEffect(() => {
     const fetchEscolas = async () => {
@@ -100,7 +103,9 @@ export const CreateAlunoModal = ({ alunoId, onClose, onSuccess }: CreateAlunoMod
 
       if (!res.ok) throw new Error("Erro ao salvar aluno");
 
+      // Chama onSuccess e redireciona para /gabaritos
       onSuccess();
+      navigate("/gabaritos");  // Redireciona para a página /gabaritos
     } catch (err) {
       alert("Erro ao salvar aluno");
     } finally {

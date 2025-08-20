@@ -37,8 +37,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     const formData = new FormData();
     const byteImage = dataURLtoBlob(photo);
-    formData.append("imagem", byteImage, "photo.jpg");  // Adicionando a extensão .jpg
-    formData.append("numero_questoes", String(questionCount));  // Número de questões
+    formData.append("imagem", byteImage, "photo.png");
+    formData.append("numero_questoes", String(questionCount)); 
 
     try {
       const response = await fetch(apiUrl, {
@@ -64,7 +64,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // Função para converter imagem base64 para Blob
   const dataURLtoBlob = (dataurl: string) => {
     const arr = dataurl.split(",");
-    const mime = "image/jpeg";  // Garantindo que o tipo MIME seja JPEG
+    const mime = "image/png";  // Garantindo que o tipo MIME seja JPEG
     const bstr = atob(arr[1]);
     const u8arr = new Uint8Array(bstr.length);
     for (let i = 0; i < bstr.length; i++) {
@@ -84,7 +84,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
          <Webcam
   audio={false}
   ref={webcamRef}
-  screenshotFormat="image/jpeg"  
+  screenshotFormat="image/png"  
   width="100%"
   videoConstraints={{
     facingMode: "environment", // Modo câmera traseira
