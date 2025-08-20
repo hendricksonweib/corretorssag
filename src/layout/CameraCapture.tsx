@@ -36,7 +36,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setError(null);
 
     const formData = new FormData();
-    const byteImage = dataURLtoBlob(photo); // Converte a imagem base64 para um Blob
+    const byteImage = dataURLtoBlob(photo); 
     formData.append("imagem", byteImage);  // A imagem será enviada como "imagem"
     formData.append("numero_questoes", String(questionCount));  // Número de questões
 
