@@ -36,8 +36,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setError(null);
 
     const formData = new FormData();
-    const byteImage = dataURLtoBlob(photo); 
-    formData.append("imagem", byteImage);  // A imagem será enviada como "imagem"
+    const byteImage = dataURLtoBlob(photo);
+    formData.append("imagem", byteImage, "photo.jpg");  // Adicionando a extensão .jpg
     formData.append("numero_questoes", String(questionCount));  // Número de questões
 
     try {
@@ -64,15 +64,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // Função para converter imagem base64 para Blob
   const dataURLtoBlob = (dataurl: string) => {
     const arr = dataurl.split(",");
-    const mimeMatch = arr[0].match(/:(.*?);/);
-    if (!mimeMatch) {
-      throw new Error("Mime type não encontrado na URL de dados.");
-    }
-    const mime = mimeMatch[1]; // Acessa o tipo MIME da imagem
+    const mime = "image/jpeg";  // Garantindo que o tipo MIME seja JPEG
     const bstr = atob(arr[1]);
-    let n = bstr.length, u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) {
+      u8arr[i] = bstr.charCodeAt(i);
     }
     return new Blob([u8arr], { type: mime });
   };
@@ -85,15 +81,16 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         </h2>
 
         <div className="w-full mb-4">
-          <Webcam
-            audio={false}
-            ref={webcamRef}
-            screenshotFormat="image/jpeg"
-            width="100%"
-            videoConstraints={{
-              facingMode: "environment", // Usando a câmera traseira
-            }}
-          />
+         <Webcam
+  audio={false}
+  ref={webcamRef}
+  screenshotFormat="image/jpeg"  
+  width="100%"
+  videoConstraints={{
+    facingMode: "environment", // Modo câmera traseira
+  }}
+/>
+
         </div>
 
         <Button
@@ -105,7 +102,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         {photo && (
           <div className="mt-4 mb-4 text-center">
             <h3 className="text-sm text-gray-500">Pré-visualização da Foto:</h3>
-            <img src={photo} alt="Captured" className="w-48 h-48 rounded-lg mx-auto" />
+            <img
+              src={photo}
+              alt="Captured"
+              className="w-48 h-48 rounded-lg mx-auto"
+            />
           </div>
         )}
 
@@ -119,6 +120,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             value={questionCount}
             onChange={(e) => setQuestionCount(Number(e.target.value))}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            min="1"
           />
         </div>
 
