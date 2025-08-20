@@ -1,0 +1,24 @@
+services:
+  front-sag-ribamar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - sag-front-network
+      - easypanel
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.front-sag-ribamar.rule=Host('localhost')"
+      - "traefik.http.routers.front-sag-ribamar.entrypoint=https"
+      - traefik.http.services.front-sag-ribamar.loadbalancer.server.port=${PORT}
+      - traefik.http.routers.front-sag-ribamar.tls=true
+      - traefik.http.routers.front-sag-ribamar.tls.certresolver=letsencrypt
+networks:
+  sag-front-network:
+  easypanel:
+    external: true
