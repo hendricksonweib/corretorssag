@@ -88,9 +88,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // Normaliza uma resposta “suja” (chaves duplicadas, além de 1..N, valores fora do conjunto)
   const normalizeResults = (raw: ApiRaw, total: number): Results => {
     const norm: Results = {};
-    // Mantém a última ocorrência da questão (se duplicada na resposta)
     const entries = Object.entries(raw);
-    // Ordena por número da pergunta; se a API tiver duplicatas, a última vence
     entries.sort((a, b) => Number(a[0]) - Number(b[0]));
 
     for (const [k, v] of entries) {
@@ -153,7 +151,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const rawJson = (await response.json()) as ApiRaw;
+      const rawJson = await response.json() as ApiRaw;
 
       if (Object.keys(rawJson).length === 0) {
         throw new Error("Nenhum dado retornado da API.");
