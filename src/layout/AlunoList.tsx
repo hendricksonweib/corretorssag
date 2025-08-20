@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IconButton } from "../components/IconButton";
+import { Camera } from "lucide-react"; 
 
 interface Turma {
   id: number;
@@ -17,21 +17,24 @@ interface Aluno {
   turma_id: number;
   turma: Turma;
   escola: Escola;
+  nota: string; 
+  prova?: {
+    id: number;
+    nome: string;
+  } | null;
 }
 
 interface AlunoListProps {
   reload?: boolean;
   onReloadDone?: () => void;
-  onEdit?: (id: number) => void;
   searchNome: string;
   escolaId: number | null;
-  turmaId: number | null; // ⬅️ Adicionado
+  turmaId: number | null;
 }
 
 export const AlunoList = ({
   reload,
   onReloadDone,
-  onEdit,
   searchNome,
   escolaId,
   turmaId,
@@ -66,30 +69,13 @@ export const AlunoList = ({
 
   useEffect(() => {
     fetchAlunos();
-  }, [page, searchNome, escolaId, turmaId]); 
+  }, [page, searchNome, escolaId, turmaId]);
 
   useEffect(() => {
     if (reload) {
       fetchAlunos().then(() => onReloadDone?.());
     }
   }, [reload, onReloadDone]);
-
-  const handleDelete = async (id: number) => {
-    const confirmDelete = window.confirm("Deseja excluir este aluno?");
-    if (!confirmDelete) return;
-
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/alunos/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Erro ao excluir");
-
-      fetchAlunos();
-    } catch (err) {
-      alert("Erro ao excluir aluno");
-    }
-  };
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -115,9 +101,17 @@ export const AlunoList = ({
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <IconButton type="edit" onClick={() => onEdit?.(aluno.id)} />
-            <IconButton type="delete" onClick={() => handleDelete(aluno.id)} />
+
+          <div className="flex gap-3 items-center">
+            {/* Exibindo a nota do aluno se disponível */}
+            {aluno.nota !== "S/N" && (
+              <span className={`text-sm ${aluno.nota ? "text-green-600 font-semibold" : "text-gray-500"}`}>
+                {aluno.nota}
+              </span>
+            )}
+
+            {/* Ícone de Câmera */}
+            <Camera size={20} className="text-blue-600 cursor-pointer hover:text-blue-800" />
           </div>
         </div>
       ))}
