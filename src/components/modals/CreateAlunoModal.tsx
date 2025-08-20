@@ -29,7 +29,7 @@ export const CreateAlunoModal = ({ alunoId, onClose, onSuccess }: CreateAlunoMod
 
   useEffect(() => {
     const fetchEscolas = async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/escolas`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/escolas?page=1&limit=200`);
       const data = await res.json();
       const lista = Array.isArray(data) ? data : data.data;
       setEscolas(Array.isArray(lista) ? lista : []);
@@ -47,7 +47,7 @@ export const CreateAlunoModal = ({ alunoId, onClose, onSuccess }: CreateAlunoMod
 
     const fetchTurmas = async () => {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${escolaId}`
+        `${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${escolaId}?page=1&limit=200`
       );
       const data = await res.json();
       const lista = Array.isArray(data) ? data : data.data;
@@ -60,7 +60,7 @@ export const CreateAlunoModal = ({ alunoId, onClose, onSuccess }: CreateAlunoMod
   useEffect(() => {
     if (alunoId !== null) {
       const fetchAluno = async () => {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/alunos/${alunoId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/alunos/${alunoId}?page=1&limit=200`);
         const data = await res.json();
         setNome(data.nome || "");
         setEscolaId(data.escola_id || "");
@@ -68,7 +68,7 @@ export const CreateAlunoModal = ({ alunoId, onClose, onSuccess }: CreateAlunoMod
 
         // Força atualização das turmas após obter a escola
         if (data.escola_id) {
-          const turmasRes = await fetch(`${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${data.escola_id}`);
+          const turmasRes = await fetch(`${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${data.escola_id}?page=1&limit=200`);
           const turmasData = await turmasRes.json();
           const lista = Array.isArray(turmasData) ? turmasData : turmasData.data;
           setTurmas(Array.isArray(lista) ? lista : []);
