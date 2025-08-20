@@ -62,7 +62,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-md p-6">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-lg p-6">
         <h2 className="text-2xl font-semibold text-blue-600 text-center mb-4">
           Tire uma Foto e Envie os Dados
         </h2>
@@ -74,7 +74,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             screenshotFormat="image/jpeg"
             width="100%"
             videoConstraints={{
-              facingMode: "user",
+              facingMode: "environment", 
             }}
           />
         </div>
