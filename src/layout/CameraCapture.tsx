@@ -307,7 +307,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </div>
         )}
 
-        {/* Canvas invisível para captura de alta qualidade */}
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
     </div>

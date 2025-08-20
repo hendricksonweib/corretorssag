@@ -24,9 +24,13 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
 
   useEffect(() => {
     const fetchEscolas = async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/escolas?page=1&limit=200`);
-      const data = await res.json();
-      setEscolas(Array.isArray(data.data) ? data.data : data);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/escolas?page=1&limit=200`);
+        const data = await res.json();
+        setEscolas(Array.isArray(data.data) ? data.data : []);
+      } catch (error) {
+        console.error("Erro ao carregar as escolas:", error);
+      }
     };
 
     fetchEscolas();
@@ -39,11 +43,16 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
       return;
     }
 
-    const fetchTurmas = async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${escolaId}?page=1&limit=200`);
-      const data = await res.json();
-      setTurmas(Array.isArray(data.data) ? data.data : data);
-    };
+ const fetchTurmas = async () => {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${escolaId}`);
+    const data = await res.json();
+    setTurmas(Array.isArray(data.data) ? data.data : []);
+  } catch (error) {
+    console.error("Erro ao carregar as turmas:", error);
+  }
+};
+
 
     fetchTurmas();
   }, [escolaId]);
