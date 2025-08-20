@@ -154,6 +154,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       }
 
       const rawJson = (await response.json()) as ApiRaw;
+
+      if (Object.keys(rawJson).length === 0) {
+        throw new Error("Nenhum dado retornado da API.");
+      }
+
       console.log("✅ Resposta (bruta) da API:", rawJson);
 
       const norm = normalizeResults(rawJson, questionCount);
