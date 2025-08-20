@@ -51,6 +51,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       }
     };
   }, []);
+  
 
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
