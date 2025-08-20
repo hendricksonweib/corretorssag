@@ -179,7 +179,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             disabled={loading || !cameraReady}
           />
           <Button
-            label="Retry Camera"
+            label="Recarregar Camera"
             onClick={retryCamera}
           />
         </div>
