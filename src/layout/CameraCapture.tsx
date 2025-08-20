@@ -6,6 +6,10 @@ interface CameraCaptureProps {
   apiUrl: string;
 }
 
+type Alt = "a" | "b" | "c" | "d" | "nula";
+type ApiRaw = Record<string, string>;
+type Results = Record<number, Alt>;
+
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState<number>(0);
@@ -14,73 +18,103 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
 
+  const [results, setResults] = useState<Results | null>(null);
+  const [stats, setStats] = useState<Record<Alt, number>>({
+    a: 0, b: 0, c: 0, d: 0, nula: 0
+  });
+
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Configurações de resolução máxima
-  const videoConstraints = {
+  // Constraints de resolução (prioriza alta)
+  const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment",
     width: { ideal: 4096 },
     height: { ideal: 2160 },
     advanced: [
-      { width: 4096, height: 2160 }, // 4K
-      { width: 3840, height: 2160 }, // 4K UHD
-      { width: 1920, height: 1080 }, // Full HD
-      { width: 1280, height: 720 },  // HD
-    ]
+      { width: 4096, height: 2160 },
+      { width: 3840, height: 2160 },
+      { width: 1920, height: 1080 },
+      { width: 1280, height: 720 },
+    ],
   };
 
   useEffect(() => {
-    // Verifica as capacidades da câmera quando estiver pronta
     const checkCameraResolution = () => {
       if (webcamRef.current?.video) {
-        const video = webcamRef.current.video;
+        const video = webcamRef.current.video as HTMLVideoElement;
         setCameraResolution(`${video.videoWidth}x${video.videoHeight}`);
         setCameraReady(true);
         console.log("📷 Resolução da câmera:", `${video.videoWidth}x${video.videoHeight}`);
       }
     };
 
-    if (webcamRef.current?.video) {
-      webcamRef.current.video.addEventListener('loadedmetadata', checkCameraResolution);
-    }
-
-    return () => {
-      if (webcamRef.current?.video) {
-        webcamRef.current.video.removeEventListener('loadedmetadata', checkCameraResolution);
-      }
-    };
+    const v = webcamRef.current?.video as HTMLVideoElement | undefined;
+    v?.addEventListener("loadedmetadata", checkCameraResolution);
+    return () => v?.removeEventListener("loadedmetadata", checkCameraResolution);
   }, []);
-
 
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
 
-    const video = webcamRef.current.video;
+    const video = webcamRef.current.video as HTMLVideoElement | null;
     const canvas = canvasRef.current;
 
     if (!video || !canvas) return;
 
-    // Configura o canvas com as dimensões reais do vídeo
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Captura o frame em alta resolução
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Converte para PNG com máxima qualidade
-    const highQualityPhoto = canvas.toDataURL('image/png', 1.0);
-    
+    // PNG qualidade máxima
+    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
+
     console.log("📸 Foto capturada:", {
       width: canvas.width,
       height: canvas.height,
-      size: highQualityPhoto.length
+      size: highQualityPhoto.length,
     });
 
     setPhoto(highQualityPhoto);
+    setResults(null);
+    setStats({ a: 0, b: 0, c: 0, d: 0, nula: 0 });
+    setError(null);
+  };
+
+  // Normaliza uma resposta “suja” (chaves duplicadas, além de 1..N, valores fora do conjunto)
+  const normalizeResults = (raw: ApiRaw, total: number): Results => {
+    const norm: Results = {};
+    // Mantém a última ocorrência da questão (se duplicada na resposta)
+    const entries = Object.entries(raw);
+    // Ordena por número da pergunta; se a API tiver duplicatas, a última vence
+    entries.sort((a, b) => Number(a[0]) - Number(b[0]));
+
+    for (const [k, v] of entries) {
+      const n = Number(k);
+      if (!Number.isFinite(n)) continue;
+      if (n < 1 || n > total) continue;
+
+      const val = (v || "").toLowerCase().trim();
+      const alt: Alt = (["a", "b", "c", "d"].includes(val) ? val : "nula") as Alt;
+      norm[n] = alt;
+    }
+
+    // Garante que todas as 1..total existam
+    for (let i = 1; i <= total; i++) {
+      if (!norm[i]) norm[i] = "nula";
+    }
+
+    return norm;
+  };
+
+  const computeStats = (r: Results) => {
+    const s: Record<Alt, number> = { a: 0, b: 0, c: 0, d: 0, nula: 0 };
+    Object.values(r).forEach((alt) => (s[alt] += 1));
+    return s;
   };
 
   const handleSubmit = async () => {
@@ -96,18 +130,18 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     setLoading(true);
     setError(null);
+    setResults(null);
 
     try {
-      // Converte para Blob mantendo alta qualidade
-      const blob = await fetch(photo).then(res => res.blob());
-      
+      const blob = await fetch(photo).then((res) => res.blob());
+
       const formData = new FormData();
       formData.append("imagem", blob, "high_quality_photo.png");
       formData.append("numero_questoes", String(questionCount));
 
       console.log("📤 Enviando imagem:", {
         size: blob.size,
-        type: blob.type
+        type: blob.type,
       });
 
       const response = await fetch(apiUrl, {
@@ -119,13 +153,16 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const result = await response.json();
-      console.log("✅ Resposta da API:", result);
+      const rawJson = (await response.json()) as ApiRaw;
+      console.log("✅ Resposta (bruta) da API:", rawJson);
 
-      alert("Foto em alta qualidade enviada com sucesso!");
-    } catch (err) {
+      const norm = normalizeResults(rawJson, questionCount);
+      setResults(norm);
+      setStats(computeStats(norm));
+
+    } catch (err: any) {
       console.error("❌ Erro no envio:", err);
-      setError("Erro ao enviar os dados. Tente novamente.");
+      setError(err?.message ? `Erro ao enviar: ${err.message}` : "Erro ao enviar os dados. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -134,20 +171,37 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const retryCamera = () => {
     setCameraReady(false);
     setTimeout(() => {
-      if (webcamRef.current?.video) {
-        setCameraReady(true);
-      }
+      if (webcamRef.current?.video) setCameraReady(true);
     }, 1000);
   };
 
+  const downloadCSV = () => {
+    if (!results) return;
+    const rows = [["questao", "resposta"]];
+    for (let i = 1; i <= questionCount; i++) {
+      rows.push([String(i), results[i]]);
+    }
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "gabarito_detectado.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const mismatch =
+    results &&
+    (Object.keys(results).length !== questionCount ||
+      Object.keys(results).some((k) => Number(k) < 1 || Number(k) > questionCount));
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-2xl p-6">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-3xl p-6">
         <h2 className="text-2xl font-semibold text-blue-600 text-center mb-4">
           Tire a Foto do Gabarito
         </h2>
-
-
 
         <div className="w-full mb-4 relative">
           <Webcam
@@ -160,11 +214,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
               setError("Erro ao acessar a câmera. Verifique as permissões.");
             }}
             style={{
-              borderRadius: '8px',
-              transform: 'scaleX(-1)' // Espelha horizontalmente para modo espelho
+              borderRadius: "8px",
+              transform: "scaleX(-1)", // espelho
             }}
           />
-          
           {!cameraReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
               <p className="text-white">Carregando câmera...</p>
@@ -173,15 +226,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         </div>
 
         <div className="flex gap-2 mb-4">
-          <Button
-            label="Capturar Foto"
-            onClick={handleCapture}
-            disabled={loading || !cameraReady}
-          />
-          <Button
-            label="Recarregar Camera"
-            onClick={retryCamera}
-          />
+          <Button label="Capturar Foto" onClick={handleCapture} disabled={loading || !cameraReady} />
+          <Button label="Recarregar Câmera" onClick={retryCamera} />
         </div>
 
         {photo && (
@@ -193,7 +239,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
               className="w-64 h-64 object-contain rounded-lg mx-auto border"
             />
             <p className="text-xs text-gray-500 mt-1">
-              {Math.round(photo.length / 1024)} KB - {cameraResolution}
+              {Math.round(photo.length / 1024)} KB — {cameraResolution}
             </p>
           </div>
         )}
@@ -208,7 +254,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             value={questionCount}
             onChange={(e) => setQuestionCount(Math.max(1, Number(e.target.value)))}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            min="1"
+            min={1}
             placeholder="Ex: 60"
           />
         </div>
@@ -225,11 +271,62 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           disabled={loading || !photo}
         />
 
+        {/* RESULTADOS */}
+        {results && (
+          <div className="mt-6">
+            {mismatch && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p className="text-yellow-800 text-sm">
+                  Atenção: a resposta da API foi normalizada para 1..{questionCount}.
+                </p>
+              </div>
+            )}
+
+            <h3 className="text-lg font-semibold mb-2">Resumo</h3>
+            <div className="grid grid-cols-5 gap-2 mb-4">
+              {(["a", "b", "c", "d", "nula"] as Alt[]).map((k) => (
+                <div key={k} className="border rounded-md p-3 text-center">
+                  <div className="text-sm text-gray-500 uppercase">{k}</div>
+                  <div className="text-xl font-semibold">{stats[k]}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold">Gabarito Detectado</h3>
+              <Button label="Baixar CSV" onClick={downloadCSV} />
+            </div>
+
+            <div className="max-h-80 overflow-auto border rounded-md">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 border-b">Questão</th>
+                    <th className="px-3 py-2 border-b">Resposta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: questionCount }, (_, i) => i + 1).map((q) => (
+                    <tr key={q} className="odd:bg-white even:bg-gray-50">
+                      <td className="px-3 py-2 border-b">{q}</td>
+                      <td className="px-3 py-2 border-b uppercase">
+                        {results[q]}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-sm text-gray-500 mt-2">
+              Total: {questionCount} — Respondidas (A-D):{" "}
+              {stats.a + stats.b + stats.c + stats.d} — Nulas: {stats.nula}
+            </p>
+          </div>
+        )}
+
         {/* Canvas invisível para captura de alta qualidade */}
-        <canvas
-          ref={canvasRef}
-          style={{ display: 'none' }}
-        />
+        <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
     </div>
   );
