@@ -47,4 +47,5 @@ export const LoginForm = () => {
       <Button label={loading ? "Carregando..." : "Entrar"} disabled={loading} />
     </form>
   );
-};
+}
+}
