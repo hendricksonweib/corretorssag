@@ -12,9 +12,10 @@ interface Turma {
 
 interface AlunoFilterProps {
   onFilter: (nome: string, escolaId: number | null, turmaId: number | null) => void;
+  onOpenCreateAlunoModal: () => void; // Função para abrir o modal de criação de aluno
 }
 
-export const AlunoFilter = ({ onFilter }: AlunoFilterProps) => {
+export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterProps) => {
   const [nome, setNome] = useState("");
   const [escolas, setEscolas] = useState<Escola[]>([]);
   const [turmas, setTurmas] = useState<Turma[]>([]);
@@ -103,6 +104,14 @@ export const AlunoFilter = ({ onFilter }: AlunoFilterProps) => {
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
         >
           Filtrar
+        </button>
+
+        {/* Botão para abrir o modal de criação de aluno */}
+        <button
+          onClick={onOpenCreateAlunoModal}
+          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition ml-4"
+        >
+          Criar Aluno
         </button>
       </div>
     </div>
