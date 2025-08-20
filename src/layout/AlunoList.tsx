@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Camera } from "lucide-react"; 
+import { Camera } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // Importando useNavigate
 
 interface Turma {
   id: number;
@@ -17,7 +18,7 @@ interface Aluno {
   turma_id: number;
   turma: Turma;
   escola: Escola;
-  nota: string; 
+  nota: string;
   prova?: {
     id: number;
     nome: string;
@@ -43,6 +44,8 @@ export const AlunoList = ({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  const navigate = useNavigate(); // Hook para navegação
 
   const fetchAlunos = async () => {
     try {
@@ -77,6 +80,10 @@ export const AlunoList = ({
     }
   }, [reload, onReloadDone]);
 
+  const handleCameraClick = () => {
+    navigate("/gabaritos"); // Navega para a página de correção
+  };
+
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden">
       <div className="px-5 py-3 bg-blue-50 border-b border-gray-200 font-semibold text-sm text-gray-800">
@@ -103,15 +110,18 @@ export const AlunoList = ({
           </div>
 
           <div className="flex gap-3 items-center">
-            {/* Exibindo a nota do aluno se disponível */}
             {aluno.nota !== "S/N" && (
               <span className={`text-sm ${aluno.nota ? "text-green-600 font-semibold" : "text-gray-500"}`}>
                 {aluno.nota}
               </span>
             )}
 
-            {/* Ícone de Câmera */}
-            <Camera size={20} className="text-blue-600 cursor-pointer hover:text-blue-800" />
+            {/* Ícone de Câmera que agora redireciona para /correcao */}
+            <Camera
+              size={20}
+              className="text-blue-600 cursor-pointer hover:text-blue-800"
+              onClick={handleCameraClick} // Adicionando a funcionalidade de navegação
+            />
           </div>
         </div>
       ))}
