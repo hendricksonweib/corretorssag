@@ -90,6 +90,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
               facingMode: "environment", // Modo câmera traseira
               width: { ideal: 1920 },     // Aumentando a resolução para 1920px
               height: { ideal: 1080 },    // Resolução de 1080px
+              advanced: [
+            { width: 3840, height: 2160 },
+            { width: 1920, height: 1080 },
+            { width: 1280, height: 720 }
+          ]
             }}
           />
         </div>
