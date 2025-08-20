@@ -30,7 +30,7 @@ function App() {
   <FiltroDashboardProvider>
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/correcao" element={<DashboardPage />} />
 
       {(isAdmin || !isGestor) && (
         <>

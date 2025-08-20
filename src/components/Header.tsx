@@ -14,7 +14,8 @@ export const Header = () => {
   };
 
   const navItems = [
-    { name: "Correção", path: "/dashboard", allowed: tipo !== "PROFESSOR"},
+    { name: "Correção", path: "/correcao", allowed: tipo !== "PROFESSOR"},
+    { name: "Gabarito", path: "/gabaritos", allowed: tipo !== "PROFESSOR"},
     { name: "Alunos", path: "/alunos", allowed: tipo !== "GESTOR" },
     { name: "Usuários", path: "/usuarios", allowed: tipo === "ADMINISTRADOR" },
   ];
