@@ -175,22 +175,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     }, 1000);
   };
 
-  const downloadCSV = () => {
-    if (!results) return;
-    const rows = [["questao", "resposta"]];
-    for (let i = 1; i <= questionCount; i++) {
-      rows.push([String(i), results[i]]);
-    }
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "gabarito_detectado.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const mismatch =
     results &&
     (Object.keys(results).length !== questionCount ||
@@ -290,11 +274,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
                   <div className="text-xl font-semibold">{stats[k]}</div>
                 </div>
               ))}
-            </div>
-
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-semibold">Gabarito Detectado</h3>
-              <Button label="Baixar CSV" onClick={downloadCSV} />
             </div>
 
             <div className="max-h-80 overflow-auto border rounded-md">
