@@ -23,8 +23,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // Constraints de resolução (prioriza alta)
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment",
-    width: { ideal: 1080 },
-    height: { ideal: 1920 },
+    width: { ideal: 4096 },
+    height: { ideal: 2160 },
     advanced: [
       { width: 4096, height: 2160 },
       { width: 3840, height: 2160 },
@@ -49,39 +49,33 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   }, []);
 
   const handleCapture = () => {
-  if (!webcamRef.current || !cameraReady) return;
+    if (!webcamRef.current || !cameraReady) return;
 
-  const video = webcamRef.current.video as HTMLVideoElement | null;
-  const canvas = canvasRef.current;
+    const video = webcamRef.current.video as HTMLVideoElement | null;
+    const canvas = canvasRef.current;
 
-  if (!video || !canvas) return;
+    if (!video || !canvas) return;
 
-  const targetWidth = 1920;
-  const targetHeight = 1080;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Redimensiona o vídeo para caber no canvas 1920x1080
-  ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+    // PNG qualidade máxima
+    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);  // Garantindo alta qualidade
 
-  // PNG qualidade máxima
-  const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
+    console.log("📸 Foto capturada:", {
+      width: canvas.width,
+      height: canvas.height,
+      size: highQualityPhoto.length,
+    });
 
-  console.log("📸 Foto capturada:", {
-    width: canvas.width,
-    height: canvas.height,
-    size: highQualityPhoto.length,
-  });
-
-  setPhoto(highQualityPhoto);
-  setCameraResolution(`${targetWidth}x${targetHeight}`);
-  setError(null);
-};
-
+    setPhoto(highQualityPhoto);
+    setError(null);
+  };
 
 
   const handleSubmit = async () => {
