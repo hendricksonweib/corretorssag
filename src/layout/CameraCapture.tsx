@@ -15,11 +15,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const webcamRef = useRef<Webcam>(null);
 
-  // Constraints de resolução para a câmera (para garantir alta qualidade)
+  // Constraints de resolução para a câmera (aumentando a resolução)
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 1920 }, // Resolução de 1920px para captura de boa qualidade
-    height: { ideal: 1080 },
+    width: { ideal: 4000 }, // Resolução aumentada para 4000px
+    height: { ideal: 3000 },
   };
 
   useEffect(() => {
@@ -47,7 +47,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         // Criando um canvas para manipular a imagem
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const maxWidth = 5000;  // Aumentando a resolução máxima
+        const maxWidth = 5000;  // Aumentando a resolução máxima para 5000px
         const maxHeight = 5000;
 
         // Definir a largura e altura com base na proporção da imagem
@@ -55,7 +55,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         canvas.width = img.width * ratio;
         canvas.height = img.height * ratio;
 
-        // Redimensionando a imagem no canvas
+        // Redimensionando a imagem no canvas para maior nitidez
         ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         // Convertendo a imagem para PNG com alta qualidade
@@ -88,7 +88,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const blob = await fetch(photo).then((res) => res.blob());
 
       const formData = new FormData();
-      formData.append("imagem", blob, "high_quality_photo.png"); // Alterado para .png
+      formData.append("imagem", blob, "high_quality_photo.png"); // Mantendo PNG para alta qualidade
       formData.append("numero_questoes", String(questionCount));
 
       const response = await fetch(apiUrl, {
