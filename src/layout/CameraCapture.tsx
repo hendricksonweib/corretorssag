@@ -85,6 +85,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setError(null);
   };
 
+  // Normaliza uma resposta “suja” (chaves duplicadas, além de 1..N, valores fora do conjunto)
   const normalizeResults = (raw: ApiRaw, total: number): Results => {
     const norm: Results = {};
     const entries = Object.entries(raw);
@@ -100,6 +101,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       norm[n] = alt;
     }
 
+    // Garante que todas as 1..total existam
     for (let i = 1; i <= total; i++) {
       if (!norm[i]) norm[i] = "nula";
     }
@@ -151,8 +153,9 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       const rawJson = await response.json() as ApiRaw;
 
-      if (Object.keys(rawJson).length === 0) {
-        throw new Error("Nenhum dado retornado da API.");
+      if (rawJson.error || Object.keys(rawJson).length === 0) {
+        // Se a resposta da API for "erro" ou estiver vazia, não devemos processar
+        throw new Error("Erro na API: Nenhum dado válido retornado.");
       }
 
       console.log("✅ Resposta (bruta) da API:", rawJson);
@@ -160,6 +163,9 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const norm = normalizeResults(rawJson, questionCount);
       setResults(norm);
       setStats(computeStats(norm));
+
+      // Exibir os resultados no console (removido da tela)
+      console.log("Resultados normalizados:", norm);
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
@@ -176,11 +182,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     }, 1000);
   };
 
-  const mismatch =
-    results &&
-    (Object.keys(results).length !== questionCount ||
-      Object.keys(results).some((k) => Number(k) < 1 || Number(k) > questionCount));
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
       <div className="bg-white rounded-lg shadow-md w-full max-w-3xl p-6">
@@ -190,16 +191,16 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
         <div className="w-full mb-4 relative">
           <Webcam
-  audio={false}
-  ref={webcamRef}
-  screenshotFormat="image/png"
-  width="100%"
-  mirrored={false}         
-  videoConstraints={videoConstraints}
-  onUserMediaError={() => {
-    setError("Erro ao acessar a câmera. Verifique as permissões.");
-  }}
-/>
+            audio={false}
+            ref={webcamRef}
+            screenshotFormat="image/png"
+            width="100%"
+            mirrored={true}
+            videoConstraints={videoConstraints}
+            onUserMediaError={() => {
+              setError("Erro ao acessar a câmera. Verifique as permissões.");
+            }}
+          />
 
           {!cameraReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
@@ -253,57 +254,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           onClick={handleSubmit}
           disabled={loading || !photo}
         />
-
-        {/* RESULTADOS */}
-        {results && (
-          <div className="mt-6">
-            {mismatch && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                <p className="text-yellow-800 text-sm">
-                  Atenção: a resposta da API foi normalizada para 1..{questionCount}.
-                </p>
-              </div>
-            )}
-
-            <h3 className="text-lg font-semibold mb-2">Resumo</h3>
-            <div className="grid grid-cols-5 gap-2 mb-4">
-              {(["a", "b", "c", "d", "nula"] as Alt[]).map((k) => (
-                <div key={k} className="border rounded-md p-3 text-center">
-                  <div className="text-sm text-gray-500 uppercase">{k}</div>
-                  <div className="text-xl font-semibold">{stats[k]}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="max-h-80 overflow-auto border rounded-md">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-3 py-2 border-b">Questão</th>
-                    <th className="px-3 py-2 border-b">Resposta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: questionCount }, (_, i) => i + 1).map((q) => (
-                    <tr key={q} className="odd:bg-white even:bg-gray-50">
-                      <td className="px-3 py-2 border-b">{q}</td>
-                      <td className="px-3 py-2 border-b uppercase">
-                        {results[q]}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-sm text-gray-500 mt-2">
-              Total: {questionCount} — Respondidas (A-D):{" "}
-              {stats.a + stats.b + stats.c + stats.d} — Nulas: {stats.nula}
-            </p>
-          </div>
-        )}
-
-        <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
     </div>
   );
