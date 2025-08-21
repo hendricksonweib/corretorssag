@@ -6,9 +6,7 @@ interface CameraCaptureProps {
   apiUrl: string;
 }
 
-type Alt = "a" | "b" | "c" | "d" | "nula";
 type ApiRaw = Record<string, string>;
-type Results = Record<number, Alt>;
 
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -18,10 +16,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
 
-  const [results, setResults] = useState<Results | null>(null);
-  const [stats, setStats] = useState<Record<Alt, number>>({
-    a: 0, b: 0, c: 0, d: 0, nula: 0
-  });
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,7 +65,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // PNG qualidade máxima
-    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
+    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);  // Garantindo alta qualidade
 
     console.log("📸 Foto capturada:", {
       width: canvas.width,
@@ -80,40 +74,9 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     });
 
     setPhoto(highQualityPhoto);
-    setResults(null);
-    setStats({ a: 0, b: 0, c: 0, d: 0, nula: 0 });
     setError(null);
   };
 
-  // Normaliza uma resposta “suja” (chaves duplicadas, além de 1..N, valores fora do conjunto)
-  const normalizeResults = (raw: ApiRaw, total: number): Results => {
-    const norm: Results = {};
-    const entries = Object.entries(raw);
-    entries.sort((a, b) => Number(a[0]) - Number(b[0]));
-
-    for (const [k, v] of entries) {
-      const n = Number(k);
-      if (!Number.isFinite(n)) continue;
-      if (n < 1 || n > total) continue;
-
-      const val = (v || "").toLowerCase().trim();
-      const alt: Alt = (["a", "b", "c", "d"].includes(val) ? val : "nula") as Alt;
-      norm[n] = alt;
-    }
-
-    // Garante que todas as 1..total existam
-    for (let i = 1; i <= total; i++) {
-      if (!norm[i]) norm[i] = "nula";
-    }
-
-    return norm;
-  };
-
-  const computeStats = (r: Results) => {
-    const s: Record<Alt, number> = { a: 0, b: 0, c: 0, d: 0, nula: 0 };
-    Object.values(r).forEach((alt) => (s[alt] += 1));
-    return s;
-  };
 
   const handleSubmit = async () => {
     if (!photo) {
@@ -128,7 +91,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     setLoading(true);
     setError(null);
-    setResults(null);
 
     try {
       const blob = await fetch(photo).then((res) => res.blob());
@@ -160,9 +122,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       console.log("✅ Resposta (bruta) da API:", rawJson);
       alert(JSON.stringify(rawJson, null, 2));
 
-      const norm = normalizeResults(rawJson, questionCount);
-      setResults(norm);
-      setStats(computeStats(norm));
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
@@ -178,11 +137,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       if (webcamRef.current?.video) setCameraReady(true);
     }, 1000);
   };
-
-  const mismatch =
-    results &&
-    (Object.keys(results).length !== questionCount ||
-      Object.keys(results).some((k) => Number(k) < 1 || Number(k) > questionCount));
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
@@ -254,8 +208,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           onClick={handleSubmit}
           disabled={loading || !photo}
         />
-
-
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
     </div>
