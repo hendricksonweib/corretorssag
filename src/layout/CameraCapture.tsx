@@ -47,8 +47,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         // Criando um canvas para manipular a imagem
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const maxWidth = 3000;  // Defina um tamanho máximo
-        const maxHeight = 4000;
+        const maxWidth = 5000;  // Aumentando a resolução máxima
+        const maxHeight = 5000;
 
         // Definir a largura e altura com base na proporção da imagem
         const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
