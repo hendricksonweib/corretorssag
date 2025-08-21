@@ -15,11 +15,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const webcamRef = useRef<Webcam>(null);
 
-  // Constraints de resolução para a câmera
+  // Ajuste para uma resolução maior
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
+    width: { ideal: 1920 }, // Aumentamos a largura para 1920px
+    height: { ideal: 1080 }, // Aumentamos a altura para 1080px
   };
 
   useEffect(() => {
@@ -145,11 +145,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         <div className="flex gap-2 mb-4">
           <Button label="Capturar Foto" onClick={handleCapture} disabled={loading || !cameraReady} />
           
-          {/* Novo botão para recarregar a câmera */}
+          {/* Botão para recarregar a câmera */}
           <Button
             label="Recarregar Câmera"
             onClick={retryCamera}
-            
           />
         </div>
 
