@@ -192,15 +192,17 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
         <div className="w-full mb-4 relative">
           <Webcam
-            audio={false}
-            ref={webcamRef}
-            screenshotFormat="image/png"
-            width="100%"
-            videoConstraints={videoConstraints}
-            onUserMediaError={() => {
-              setError("Erro ao acessar a câmera. Verifique as permissões.");
-            }}
-          />
+  audio={false}
+  ref={webcamRef}
+  screenshotFormat="image/png"
+  width="100%"
+  mirrored={true}         
+  videoConstraints={videoConstraints}
+  onUserMediaError={() => {
+    setError("Erro ao acessar a câmera. Verifique as permissões.");
+  }}
+/>
+
           {!cameraReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
               <p className="text-white">Carregando câmera...</p>
