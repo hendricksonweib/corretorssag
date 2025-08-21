@@ -87,8 +87,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       console.log("✅ Resposta (bruta) da API:", rawJson);
 
-      // Alertar a resposta JSON no mobile
-      alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
+      alert(JSON.stringify(rawJson, null, 2)); 
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
@@ -137,11 +136,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
         {photo && (
           <div className="mt-4 mb-4 text-center">
-            <h3 className="text-sm text-gray-500 mb-2">Pré-visualização (reduzida):</h3>
+            <h3 className="text-sm text-gray-500 mb-2">Pré-visualização (com maior qualidade):</h3>
             <img
               src={photo}
               alt="Captured HD"
-              className="w-64 h-64 object-contain rounded-lg mx-auto border"
+              className="w-full max-w-[800px] h-auto object-contain rounded-lg mx-auto border"
             />
             <p className="text-xs text-gray-500 mt-1">
               {Math.round(photo.length / 1024)} KB — {webcamRef.current?.video?.videoWidth}x{webcamRef.current?.video?.videoHeight} px
