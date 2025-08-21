@@ -15,10 +15,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const webcamRef = useRef<Webcam>(null);
 
-  // Constraints de resolução para a câmera (aumentando a resolução)
+  // Constraints de resolução para a câmera
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 4000 }, // Resolução aumentada para 4000px
+    width: { ideal: 4000 }, // Aumentar resolução para maior qualidade
     height: { ideal: 3000 },
   };
 
@@ -37,33 +37,31 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
 
-    // Capture a imagem com maior resolução possível
-    const imageSrc = webcamRef.current.getScreenshot();
-    if (imageSrc) {
-      const img = new Image();
-      img.src = imageSrc;
+    // Captura o fluxo de vídeo diretamente
+    const video = webcamRef.current?.video;
 
-      img.onload = () => {
-        // Criando um canvas para manipular a imagem
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const maxWidth = 5000;  // Aumentando a resolução máxima para 5000px
-        const maxHeight = 5000;
+    if (video) {
+      // Criar um canvas para capturar a imagem com alta qualidade
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
 
-        // Definir a largura e altura com base na proporção da imagem
-        const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
+      // Definir a largura e altura do canvas com a resolução desejada
+      const width = video.videoWidth; // Usar a resolução do vídeo
+      const height = video.videoHeight;
 
-        // Redimensionando a imagem no canvas para maior nitidez
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Ajustar o tamanho do canvas para a resolução do vídeo
+      canvas.width = width;
+      canvas.height = height;
 
-        // Convertendo a imagem para PNG com alta qualidade
-        const highQualityImage = canvas.toDataURL('image/png'); // Formato PNG
+      // Desenhar o quadro do vídeo no canvas
+      ctx?.drawImage(video, 0, 0, width, height);
 
-        setPhoto(highQualityImage);
-        setError(null);
-      };
+      // Obter a imagem do canvas como PNG (sem compressão)
+      const highQualityImage = canvas.toDataURL("image/png");
+
+      // Definir a imagem no estado
+      setPhoto(highQualityImage);
+      setError(null);
     } else {
       setError("Não foi possível capturar a imagem.");
     }
@@ -88,7 +86,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const blob = await fetch(photo).then((res) => res.blob());
 
       const formData = new FormData();
-      formData.append("imagem", blob, "high_quality_photo.png"); // Mantendo PNG para alta qualidade
+      formData.append("imagem", blob, "high_quality_photo.png"); // Mantendo PNG
       formData.append("numero_questoes", String(questionCount));
 
       const response = await fetch(apiUrl, {
@@ -136,7 +134,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           <Webcam
             audio={false}
             ref={webcamRef}
-            screenshotFormat="image/png" // Usando PNG ao invés de JPG
+            screenshotFormat="image/png" // Mantendo PNG
             width="100%"
             videoConstraints={videoConstraints}
             onUserMediaError={() => {
