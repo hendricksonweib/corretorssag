@@ -6,20 +6,12 @@ interface CameraCaptureProps {
   apiUrl: string;
 }
 
-type Alt = "a" | "b" | "c" | "d" | "nula";
-type ApiRaw = Record<string, string>;
-type Results = Record<number, Alt>;
-
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
-  const [results, setResults] = useState<Results | null>(null);
-  const [stats, setStats] = useState<Record<Alt, number>>({
-    a: 0, b: 0, c: 0, d: 0, nula: 0
-  });
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,7 +26,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   useEffect(() => {
     const checkCameraResolution = () => {
       if (webcamRef.current?.video) {
-        const video = webcamRef.current.video as HTMLVideoElement;
         setCameraReady(true);
       }
     };
@@ -47,63 +38,19 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
 
-    const video = webcamRef.current.video as HTMLVideoElement | null;
     const canvas = canvasRef.current;
 
-    if (!video || !canvas) return;
+    if (!canvas) return;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Captura a imagem usando o método getScreenshot do WebCam
+    const imageSrc = webcamRef.current.getScreenshot();
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // PNG qualidade máxima
-    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
-
-    console.log("📸 Foto capturada:", {
-      width: canvas.width,
-      height: canvas.height,
-      size: highQualityPhoto.length,
-    });
-
-    setPhoto(highQualityPhoto);
-    setResults(null);
-    setStats({ a: 0, b: 0, c: 0, d: 0, nula: 0 });
-    setError(null);
-  };
-
-  // Normaliza a resposta da API
-  const normalizeResults = (raw: ApiRaw, total: number): Results => {
-    const norm: Results = {};
-    const entries = Object.entries(raw);
-    entries.sort((a, b) => Number(a[0]) - Number(b[0]));
-
-    for (const [k, v] of entries) {
-      const n = Number(k);
-      if (!Number.isFinite(n)) continue;
-      if (n < 1 || n > total) continue;
-
-      const val = (v || "").toLowerCase().trim();
-      const alt: Alt = (["a", "b", "c", "d"].includes(val) ? val : "nula") as Alt;
-      norm[n] = alt;
+    if (imageSrc) {
+      setPhoto(imageSrc);
+      setError(null);
+    } else {
+      setError("Não foi possível capturar a imagem.");
     }
-
-    // Garante que todas as 1..total existam
-    for (let i = 1; i <= total; i++) {
-      if (!norm[i]) norm[i] = "nula";
-    }
-
-    return norm;
-  };
-
-  // Atualiza as estatísticas
-  const computeStats = (r: Results) => {
-    const s: Record<Alt, number> = { a: 0, b: 0, c: 0, d: 0, nula: 0 };
-    Object.values(r).forEach((alt) => (s[alt] += 1));
-    return s;
   };
 
   // Envia a foto para a API
@@ -120,7 +67,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     setLoading(true);
     setError(null);
-    setResults(null);
 
     try {
       const blob = await fetch(photo).then((res) => res.blob());
@@ -143,7 +89,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const rawJson = await response.json() as ApiRaw;
+      const rawJson = await response.json();
 
       if (rawJson.error || Object.keys(rawJson).length === 0) {
         throw new Error("Erro na API: Nenhum dado válido retornado.");
@@ -153,11 +99,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       // Alertar a resposta JSON no mobile
       alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
-
-      // Normaliza a resposta da API
-      const norm = normalizeResults(rawJson, questionCount);
-      setResults(norm);
-      setStats(computeStats(norm));
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
@@ -244,10 +185,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           onClick={handleSubmit}
           disabled={loading || !photo}
         />
-
-       
-
-        <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
     </div>
   );
