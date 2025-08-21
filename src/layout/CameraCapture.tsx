@@ -200,10 +200,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             onUserMediaError={() => {
               setError("Erro ao acessar a câmera. Verifique as permissões.");
             }}
-            style={{
-              borderRadius: "8px",
-              transform: "scaleX(-1)", // espelho
-            }}
           />
           {!cameraReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
