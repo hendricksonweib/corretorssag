@@ -55,19 +55,29 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   }, []);
 
   const handleCapture = () => {
-    if (!webcamRef.current || !cameraReady) return;
+    if (!webcamRef.current || !cameraReady) {
+      setError("A câmera não está pronta.");
+      return;
+    }
 
     const video = webcamRef.current.video as HTMLVideoElement | null;
     const canvas = canvasRef.current;
 
-    if (!video || !canvas) return;
+    if (!video || !canvas) {
+      setError("Não foi possível acessar a câmera ou o canvas.");
+      return;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      setError("Não foi possível acessar o contexto do canvas.");
+      return;
+    }
 
+    // Captura a imagem da câmera e desenha no canvas
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // PNG qualidade máxima
@@ -163,9 +173,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const norm = normalizeResults(rawJson, questionCount);
       setResults(norm);
       setStats(computeStats(norm));
-
-      // Exibir os resultados no console (removido da tela)
-      console.log("Resultados normalizados:", norm);
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
