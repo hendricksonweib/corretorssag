@@ -6,26 +6,46 @@ interface CameraCaptureProps {
   apiUrl: string;
 }
 
+type Alt = "a" | "b" | "c" | "d" | "nula";
+type ApiRaw = Record<string, string>;
+type Results = Record<number, Alt>;
+
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraResolution, setCameraResolution] = useState("");
+
+  const [results, setResults] = useState<Results | null>(null);
+  const [stats, setStats] = useState<Record<Alt, number>>({
+    a: 0, b: 0, c: 0, d: 0, nula: 0
+  });
 
   const webcamRef = useRef<Webcam>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Constraints de resolução para a câmera
+  // Constraints de resolução (prioriza alta)
   const videoConstraints: MediaTrackConstraints = {
-    facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 4000 }, // Aumentar resolução para maior qualidade
-    height: { ideal: 3000 },
+    facingMode: "environment",
+    width: { ideal: 4096 },
+    height: { ideal: 2160 },
+    advanced: [
+      { width: 4096, height: 2160 },
+      { width: 3840, height: 2160 },
+      { width: 1920, height: 1080 },
+      { width: 1280, height: 720 },
+    ],
   };
 
   useEffect(() => {
     const checkCameraResolution = () => {
       if (webcamRef.current?.video) {
+        const video = webcamRef.current.video as HTMLVideoElement;
+        setCameraResolution(`${video.videoWidth}x${video.videoHeight}`);
         setCameraReady(true);
+        console.log("📷 Resolução da câmera:", `${video.videoWidth}x${video.videoHeight}`);
       }
     };
 
@@ -37,37 +57,64 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
 
-    // Captura o fluxo de vídeo diretamente
-    const video = webcamRef.current?.video;
+    const video = webcamRef.current.video as HTMLVideoElement | null;
+    const canvas = canvasRef.current;
 
-    if (video) {
-      // Criar um canvas para capturar a imagem com alta qualidade
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+    if (!video || !canvas) return;
 
-      // Definir a largura e altura do canvas com a resolução desejada
-      const width = video.videoWidth; // Usar a resolução do vídeo
-      const height = video.videoHeight;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-      // Ajustar o tamanho do canvas para a resolução do vídeo
-      canvas.width = width;
-      canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-      // Desenhar o quadro do vídeo no canvas
-      ctx?.drawImage(video, 0, 0, width, height);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Obter a imagem do canvas como PNG (sem compressão)
-      const highQualityImage = canvas.toDataURL("image/png");
+    // PNG qualidade máxima
+    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
 
-      // Definir a imagem no estado
-      setPhoto(highQualityImage);
-      setError(null);
-    } else {
-      setError("Não foi possível capturar a imagem.");
-    }
+    console.log("📸 Foto capturada:", {
+      width: canvas.width,
+      height: canvas.height,
+      size: highQualityPhoto.length,
+    });
+
+    setPhoto(highQualityPhoto);
+    setResults(null);
+    setStats({ a: 0, b: 0, c: 0, d: 0, nula: 0 });
+    setError(null);
   };
 
-  // Envia a foto para a API
+  // Normaliza uma resposta “suja” (chaves duplicadas, além de 1..N, valores fora do conjunto)
+  const normalizeResults = (raw: ApiRaw, total: number): Results => {
+    const norm: Results = {};
+    const entries = Object.entries(raw);
+    entries.sort((a, b) => Number(a[0]) - Number(b[0]));
+
+    for (const [k, v] of entries) {
+      const n = Number(k);
+      if (!Number.isFinite(n)) continue;
+      if (n < 1 || n > total) continue;
+
+      const val = (v || "").toLowerCase().trim();
+      const alt: Alt = (["a", "b", "c", "d"].includes(val) ? val : "nula") as Alt;
+      norm[n] = alt;
+    }
+
+    // Garante que todas as 1..total existam
+    for (let i = 1; i <= total; i++) {
+      if (!norm[i]) norm[i] = "nula";
+    }
+
+    return norm;
+  };
+
+  const computeStats = (r: Results) => {
+    const s: Record<Alt, number> = { a: 0, b: 0, c: 0, d: 0, nula: 0 };
+    Object.values(r).forEach((alt) => (s[alt] += 1));
+    return s;
+  };
+
   const handleSubmit = async () => {
     if (!photo) {
       setError("Por favor, tire uma foto primeiro.");
@@ -81,13 +128,19 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     setLoading(true);
     setError(null);
+    setResults(null);
 
     try {
       const blob = await fetch(photo).then((res) => res.blob());
 
       const formData = new FormData();
-      formData.append("imagem", blob, "high_quality_photo.png"); // Mantendo PNG
+      formData.append("imagem", blob, "high_quality_photo.png");
       formData.append("numero_questoes", String(questionCount));
+
+      console.log("📤 Enviando imagem:", {
+        size: blob.size,
+        type: blob.type,
+      });
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -98,15 +151,18 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const rawJson = await response.json();
+      const rawJson = await response.json() as ApiRaw;
 
-      if (rawJson.error || Object.keys(rawJson).length === 0) {
-        throw new Error("Erro na API: Nenhum dado válido retornado.");
+      if (Object.keys(rawJson).length === 0) {
+        throw new Error("Nenhum dado retornado da API.");
       }
 
       console.log("✅ Resposta (bruta) da API:", rawJson);
+      alert(JSON.stringify(rawJson, null, 2));
 
-      alert(JSON.stringify(rawJson, null, 2)); // Exibe a resposta JSON no mobile
+      const norm = normalizeResults(rawJson, questionCount);
+      setResults(norm);
+      setStats(computeStats(norm));
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
@@ -123,6 +179,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     }, 1000);
   };
 
+  const mismatch =
+    results &&
+    (Object.keys(results).length !== questionCount ||
+      Object.keys(results).some((k) => Number(k) < 1 || Number(k) > questionCount));
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
       <div className="bg-white rounded-lg shadow-md w-full max-w-3xl p-6">
@@ -134,7 +195,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           <Webcam
             audio={false}
             ref={webcamRef}
-            screenshotFormat="image/png" // Mantendo PNG
+            screenshotFormat="image/png"
             width="100%"
             videoConstraints={videoConstraints}
             onUserMediaError={() => {
@@ -155,14 +216,14 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
         {photo && (
           <div className="mt-4 mb-4 text-center">
-            <h3 className="text-sm text-gray-500 mb-2">Pré-visualização (com maior qualidade):</h3>
+            <h3 className="text-sm text-gray-500 mb-2">Pré-visualização (reduzida):</h3>
             <img
               src={photo}
               alt="Captured HD"
-              className="w-full max-w-[800px] h-auto object-contain rounded-lg mx-auto border"
+              className="w-64 h-64 object-contain rounded-lg mx-auto border"
             />
             <p className="text-xs text-gray-500 mt-1">
-              {Math.round(photo.length / 1024)} KB — {webcamRef.current?.video?.videoWidth}x{webcamRef.current?.video?.videoHeight} px
+              {Math.round(photo.length / 1024)} KB — {cameraResolution}
             </p>
           </div>
         )}
@@ -193,6 +254,9 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           onClick={handleSubmit}
           disabled={loading || !photo}
         />
+
+
+        <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
     </div>
   );
