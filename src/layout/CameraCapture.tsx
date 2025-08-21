@@ -14,13 +14,12 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
 
   const webcamRef = useRef<Webcam>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Constraints de resolução para a câmera
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 1920 }, // Aumentei a largura para 1920px
-    height: { ideal: 1080 }, // Aumentei a altura para 1080px
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
   };
 
   useEffect(() => {
@@ -37,10 +36,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
-
-    const canvas = canvasRef.current;
-
-    if (!canvas) return;
 
     // Captura a imagem usando o método getScreenshot do WebCam
     const imageSrc = webcamRef.current.getScreenshot();
@@ -74,11 +69,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const formData = new FormData();
       formData.append("imagem", blob, "high_quality_photo.png");
       formData.append("numero_questoes", String(questionCount));
-
-      console.log("📤 Enviando imagem:", {
-        size: blob.size,
-        type: blob.type,
-      });
 
       const response = await fetch(apiUrl, {
         method: "POST",
