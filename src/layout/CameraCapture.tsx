@@ -18,6 +18,9 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
 
+  const [showModal, setShowModal] = useState(false);  // Controlar o estado do modal
+  const [modalContent, setModalContent] = useState<string>("");
+
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -101,7 +104,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const formData = new FormData();
       formData.append("imagem", blob, "high_quality_photo.png");
       formData.append("numero_questoes", questionCount);
-      formData.append("prova_id", selectedProva); // Enviar o ID da prova selecionada
+      formData.append("prova_id", selectedProva);
 
       console.log("📤 Enviando imagem:", {
         size: blob.size,
@@ -123,8 +126,9 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error("Nenhum dado retornado da API.");
       }
 
-      console.log("✅ Resposta (bruta) da API:", rawJson);
-      alert(JSON.stringify(rawJson, null, 2));
+      // Exibe o modal com os logs da resposta
+      setModalContent(JSON.stringify(rawJson, null, 2));
+      setShowModal(true);
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
@@ -154,6 +158,16 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setSelectedProva(id);
   };
 
+  const handleModalClose = () => {
+    setShowModal(false);
+  };
+
+  const handleModalConfirm = () => {
+    // Ação após o usuário confirmar
+    setShowModal(false);
+    alert("Correção confirmada!");
+  };
+
   return (
     <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
       <div className="bg-white rounded-lg shadow-md w-full max-w-lg p-4 flex-1">
@@ -161,7 +175,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           Capture o Gabarito
         </h2>
 
-        {/* Select Provas */}
         <div className="w-full mb-4">
           <SelectProvas value={selectedProva} onChange={handleProvaChange} />
         </div>
@@ -230,6 +243,21 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           onClick={handleSubmit}
           disabled={loading || !photo}
         />
+
+        {/* Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Log de Resposta da API</h3>
+              <pre className="text-sm text-gray-700 whitespace-pre-wrap">{modalContent}</pre>
+              <div className="mt-4 flex justify-end gap-3">
+                <Button label="Corrigir" onClick={handleModalClose} />
+                <Button label="Confirmar" onClick={handleModalConfirm} />
+              </div>
+            </div>
+          </div>
+        )}
+
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
     </div>
