@@ -85,7 +85,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setError(null);
   };
 
-  // Normaliza uma resposta “suja” (chaves duplicadas, além de 1..N, valores fora do conjunto)
   const normalizeResults = (raw: ApiRaw, total: number): Results => {
     const norm: Results = {};
     const entries = Object.entries(raw);
@@ -101,7 +100,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       norm[n] = alt;
     }
 
-    // Garante que todas as 1..total existam
     for (let i = 1; i <= total; i++) {
       if (!norm[i]) norm[i] = "nula";
     }
@@ -196,7 +194,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   ref={webcamRef}
   screenshotFormat="image/png"
   width="100%"
-  mirrored={true}         
+  mirrored={false}         
   videoConstraints={videoConstraints}
   onUserMediaError={() => {
     setError("Erro ao acessar a câmera. Verifique as permissões.");
