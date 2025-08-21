@@ -148,8 +148,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       if (rawJson.error || Object.keys(rawJson).length === 0) {
         throw new Error("Erro na API: Nenhum dado válido retornado.");
       }
-alert(rawJson)
+
       console.log("✅ Resposta (bruta) da API:", rawJson);
+
+      // Alertar a resposta JSON no mobile
+      alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
 
       // Normaliza a resposta da API
       const norm = normalizeResults(rawJson, questionCount);
