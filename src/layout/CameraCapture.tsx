@@ -20,12 +20,16 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-   const videoConstraints: MediaTrackConstraints = {
-    facingMode: "environment", // Usando a câmera traseira
-    width: { ideal: 1080 },  // Largura ideal de 1080 pixels
-    height: { ideal: 1920 }, // Altura ideal de 1920 pixels
+  // Constraints de resolução (prioriza alta)
+  const videoConstraints: MediaTrackConstraints = {
+    facingMode: "environment",
+    width: { ideal: 4096 },
+    height: { ideal: 2160 },
     advanced: [
-      { width: 1080, height: 1920 }, // Definindo também na configuração avançada
+      { width: 4096, height: 2160 },
+      { width: 3840, height: 2160 },
+      { width: 1920, height: 1080 },
+      { width: 1280, height: 720 },
     ],
   };
 
