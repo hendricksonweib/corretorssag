@@ -18,7 +18,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // Constraints de resolução para a câmera
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 1920 },
+    width: { ideal: 1920 }, // Tamanho ideal para boa qualidade
     height: { ideal: 1080 },
   };
 
@@ -87,7 +87,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       console.log("✅ Resposta (bruta) da API:", rawJson);
 
-      alert(JSON.stringify(rawJson, null, 2)); 
+      // Alertar a resposta JSON no mobile
+      alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
