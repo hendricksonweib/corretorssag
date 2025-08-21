@@ -35,18 +35,19 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   }, []);
 
   const handleCapture = () => {
-    if (!webcamRef.current || !cameraReady) return;
+  if (!webcamRef.current || !cameraReady) return;
 
-    // Captura a imagem com alta qualidade usando o método getScreenshot do WebCam
-    const imageSrc = webcamRef.current.getScreenshot();
+  // Capture a imagem com maior resolução possível
+  const imageSrc = webcamRef.current.getScreenshot();
 
-    if (imageSrc) {
-      setPhoto(imageSrc);
-      setError(null);
-    } else {
-      setError("Não foi possível capturar a imagem.");
-    }
-  };
+  if (imageSrc) {
+    setPhoto(imageSrc);
+    setError(null);
+  } else {
+    setError("Não foi possível capturar a imagem.");
+  }
+};
+
 
   // Envia a foto para a API
   const handleSubmit = async () => {
