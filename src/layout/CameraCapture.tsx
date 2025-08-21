@@ -159,7 +159,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             ref={webcamRef}
             screenshotFormat="image/png"
             width="100%"
-            mirrored={true}
+            mirrored={false}
             videoConstraints={videoConstraints}
             onUserMediaError={() => {
               setError("Erro ao acessar a câmera. Verifique as permissões.");
