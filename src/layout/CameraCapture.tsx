@@ -12,77 +12,45 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
-  const [cameraResolution, setCameraResolution] = useState("");
 
   const webcamRef = useRef<Webcam>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Constraints de resolução
+  // Constraints de resolução (para a câmera)
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 4096 },
-    height: { ideal: 2160 },
-    advanced: [
-      { width: 4096, height: 2160 },
-      { width: 3840, height: 2160 },
-      { width: 1920, height: 1080 },
-      { width: 1280, height: 720 },
-    ],
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
   };
 
   useEffect(() => {
-    const checkCameraResolution = () => {
+    // Checa se a câmera foi inicializada corretamente
+    const checkCamera = () => {
       if (webcamRef.current?.video) {
-        const video = webcamRef.current.video as HTMLVideoElement;
-        setCameraResolution(`${video.videoWidth}x${video.videoHeight}`);
-        setCameraReady(true);
-        console.log("📷 Resolução da câmera:", `${video.videoWidth}x${video.videoHeight}`);
+        setCameraReady(true);  // A câmera foi inicializada corretamente
       }
     };
 
     const v = webcamRef.current?.video as HTMLVideoElement | undefined;
-    v?.addEventListener("loadedmetadata", checkCameraResolution);
-    return () => v?.removeEventListener("loadedmetadata", checkCameraResolution);
+    v?.addEventListener("loadedmetadata", checkCamera);
+    return () => v?.removeEventListener("loadedmetadata", checkCamera);
   }, []);
 
   const handleCapture = () => {
+    // Verificar se a câmera está pronta
     if (!webcamRef.current || !cameraReady) {
       setError("A câmera não está pronta.");
       return;
     }
 
-    const video = webcamRef.current.video as HTMLVideoElement | null;
-    const canvas = canvasRef.current;
+    // Capturar a imagem da câmera
+    const imageSrc = webcamRef.current.getScreenshot(); // Usando o método `getScreenshot` do WebCam
 
-    if (!video || !canvas) {
-      setError("Não foi possível acessar a câmera ou o canvas.");
-      return;
+    if (imageSrc) {
+      setPhoto(imageSrc);
+      setError(null);
+    } else {
+      setError("Não foi possível capturar a imagem.");
     }
-
-    // Certifique-se de que o canvas tenha as mesmas dimensões do vídeo
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      setError("Não foi possível acessar o contexto do canvas.");
-      return;
-    }
-
-    // Captura a imagem da câmera e desenha no canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // PNG qualidade máxima
-    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
-
-    console.log("📸 Foto capturada:", {
-      width: canvas.width,
-      height: canvas.height,
-      size: highQualityPhoto.length,
-    });
-
-    setPhoto(highQualityPhoto);
-    setError(null);
   };
 
   const handleSubmit = async () => {
@@ -139,13 +107,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     }
   };
 
-  const retryCamera = () => {
-    setCameraReady(false);
-    setTimeout(() => {
-      if (webcamRef.current?.video) setCameraReady(true);
-    }, 1000);
-  };
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
       <div className="bg-white rounded-lg shadow-md w-full max-w-3xl p-6">
@@ -159,7 +120,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             ref={webcamRef}
             screenshotFormat="image/png"
             width="100%"
-            mirrored={true}  // Defina "true" para espelhar a imagem ao vivo da câmera
             videoConstraints={videoConstraints}
             onUserMediaError={() => {
               setError("Erro ao acessar a câmera. Verifique as permissões.");
@@ -175,7 +135,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
         <div className="flex gap-2 mb-4">
           <Button label="Capturar Foto" onClick={handleCapture} disabled={loading || !cameraReady} />
-          <Button label="Recarregar Câmera" onClick={retryCamera} />
         </div>
 
         {photo && (
@@ -186,9 +145,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
               alt="Captured HD"
               className="w-64 h-64 object-contain rounded-lg mx-auto border"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              {Math.round(photo.length / 1024)} KB — {cameraResolution}
-            </p>
           </div>
         )}
 
