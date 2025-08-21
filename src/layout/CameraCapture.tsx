@@ -15,10 +15,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const webcamRef = useRef<Webcam>(null);
 
-  // Constraints de resolução para a câmera
+  // Constraints de resolução para a câmera (para garantir alta qualidade)
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
-    width: { ideal: 1920 }, // Tamanho ideal para boa qualidade
+    width: { ideal: 1920 }, // Resolução de 1920px para captura de boa qualidade
     height: { ideal: 1080 },
   };
 
@@ -37,7 +37,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const handleCapture = () => {
     if (!webcamRef.current || !cameraReady) return;
 
-    // Captura a imagem usando o método getScreenshot do WebCam
+    // Captura a imagem com alta qualidade usando o método getScreenshot do WebCam
     const imageSrc = webcamRef.current.getScreenshot();
 
     if (imageSrc) {
@@ -87,8 +87,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       console.log("✅ Resposta (bruta) da API:", rawJson);
 
-      // Alertar a resposta JSON no mobile
-      alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
+      alert(JSON.stringify(rawJson, null, 2)); // Exibe a resposta JSON no mobile
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
