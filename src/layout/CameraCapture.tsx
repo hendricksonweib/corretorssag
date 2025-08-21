@@ -245,46 +245,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           disabled={loading || !photo}
         />
 
-        {/* RESULTADOS */}
-        {results && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-2">Resumo</h3>
-            <div className="grid grid-cols-5 gap-2 mb-4">
-              {(["a", "b", "c", "d", "nula"] as Alt[]).map((k) => (
-                <div key={k} className="border rounded-md p-3 text-center">
-                  <div className="text-sm text-gray-500 uppercase">{k}</div>
-                  <div className="text-xl font-semibold">{stats[k]}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="max-h-80 overflow-auto border rounded-md">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-3 py-2 border-b">Questão</th>
-                    <th className="px-3 py-2 border-b">Resposta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: questionCount }, (_, i) => i + 1).map((q) => (
-                    <tr key={q} className="odd:bg-white even:bg-gray-50">
-                      <td className="px-3 py-2 border-b">{q}</td>
-                      <td className="px-3 py-2 border-b uppercase">
-                        {results[q]}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-sm text-gray-500 mt-2">
-              Total: {questionCount} — Respondidas (A-D):{" "}
-              {stats.a + stats.b + stats.c + stats.d} — Nulas: {stats.nula}
-            </p>
-          </div>
-        )}
+       
 
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
