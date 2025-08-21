@@ -15,7 +15,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const webcamRef = useRef<Webcam>(null);
 
-  // Constraints de resolução (para a câmera)
+  // Constraints de resolução para a câmera
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment", // Garante que a câmera traseira seja usada
     width: { ideal: 1280 },
@@ -96,8 +96,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       console.log("✅ Resposta (bruta) da API:", rawJson);
 
-      // Adicionando o alert para mostrar o JSON da resposta
-      alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
+      // Exibindo a resposta JSON em um alert
+      alert(JSON.stringify(rawJson, null, 2));
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
@@ -105,6 +105,15 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const retryCamera = () => {
+    // Resetando o estado de câmera
+    setCameraReady(false);
+    // Espera um pouco e tenta novamente
+    setTimeout(() => {
+      if (webcamRef.current?.video) setCameraReady(true);
+    }, 1000);
   };
 
   return (
@@ -135,6 +144,13 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
         <div className="flex gap-2 mb-4">
           <Button label="Capturar Foto" onClick={handleCapture} disabled={loading || !cameraReady} />
+          
+          {/* Novo botão para recarregar a câmera */}
+          <Button
+            label="Recarregar Câmera"
+            onClick={retryCamera}
+            
+          />
         </div>
 
         {photo && (
