@@ -49,33 +49,39 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   }, []);
 
   const handleCapture = () => {
-    if (!webcamRef.current || !cameraReady) return;
+  if (!webcamRef.current || !cameraReady) return;
 
-    const video = webcamRef.current.video as HTMLVideoElement | null;
-    const canvas = canvasRef.current;
+  const video = webcamRef.current.video as HTMLVideoElement | null;
+  const canvas = canvasRef.current;
 
-    if (!video || !canvas) return;
+  if (!video || !canvas) return;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+  const targetWidth = 1920;
+  const targetHeight = 1080;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
-    // PNG qualidade máxima
-    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);  // Garantindo alta qualidade
+  // Redimensiona o vídeo para caber no canvas 1920x1080
+  ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
 
-    console.log("📸 Foto capturada:", {
-      width: canvas.width,
-      height: canvas.height,
-      size: highQualityPhoto.length,
-    });
+  // PNG qualidade máxima
+  const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
 
-    setPhoto(highQualityPhoto);
-    setError(null);
-  };
+  console.log("📸 Foto capturada:", {
+    width: canvas.width,
+    height: canvas.height,
+    size: highQualityPhoto.length,
+  });
+
+  setPhoto(highQualityPhoto);
+  setCameraResolution(`${targetWidth}x${targetHeight}`);
+  setError(null);
+};
+
 
 
   const handleSubmit = async () => {
