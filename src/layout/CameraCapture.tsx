@@ -16,8 +16,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
-  const [cameraResolution, setCameraResolution] = useState("");
-
   const [results, setResults] = useState<Results | null>(null);
   const [stats, setStats] = useState<Record<Alt, number>>({
     a: 0, b: 0, c: 0, d: 0, nula: 0
@@ -26,26 +24,18 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Constraints de resolução (prioriza alta)
+  // Constraints de resolução para a câmera
   const videoConstraints: MediaTrackConstraints = {
-    facingMode: "environment",
-    width: { ideal: 4096 },
-    height: { ideal: 2160 },
-    advanced: [
-      { width: 4096, height: 2160 },
-      { width: 3840, height: 2160 },
-      { width: 1920, height: 1080 },
-      { width: 1280, height: 720 },
-    ],
+    facingMode: "environment", // Garante que a câmera traseira seja usada
+    width: { ideal: 1920 }, // Aumentei a largura para 1920px
+    height: { ideal: 1080 }, // Aumentei a altura para 1080px
   };
 
   useEffect(() => {
     const checkCameraResolution = () => {
       if (webcamRef.current?.video) {
         const video = webcamRef.current.video as HTMLVideoElement;
-        setCameraResolution(`${video.videoWidth}x${video.videoHeight}`);
         setCameraReady(true);
-        console.log("📷 Resolução da câmera:", `${video.videoWidth}x${video.videoHeight}`);
       }
     };
 
@@ -85,7 +75,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setError(null);
   };
 
-  // Normaliza uma resposta “suja” (chaves duplicadas, além de 1..N, valores fora do conjunto)
+  // Normaliza a resposta da API
   const normalizeResults = (raw: ApiRaw, total: number): Results => {
     const norm: Results = {};
     const entries = Object.entries(raw);
@@ -109,12 +99,14 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     return norm;
   };
 
+  // Atualiza as estatísticas
   const computeStats = (r: Results) => {
     const s: Record<Alt, number> = { a: 0, b: 0, c: 0, d: 0, nula: 0 };
     Object.values(r).forEach((alt) => (s[alt] += 1));
     return s;
   };
 
+  // Envia a foto para a API
   const handleSubmit = async () => {
     if (!photo) {
       setError("Por favor, tire uma foto primeiro.");
@@ -153,12 +145,13 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       const rawJson = await response.json() as ApiRaw;
 
-      if (Object.keys(rawJson).length === 0) {
-        throw new Error("Nenhum dado retornado da API.");
+      if (rawJson.error || Object.keys(rawJson).length === 0) {
+        throw new Error("Erro na API: Nenhum dado válido retornado.");
       }
-
+alert(rawJson)
       console.log("✅ Resposta (bruta) da API:", rawJson);
 
+      // Normaliza a resposta da API
       const norm = normalizeResults(rawJson, questionCount);
       setResults(norm);
       setStats(computeStats(norm));
@@ -177,11 +170,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       if (webcamRef.current?.video) setCameraReady(true);
     }, 1000);
   };
-
-  const mismatch =
-    results &&
-    (Object.keys(results).length !== questionCount ||
-      Object.keys(results).some((k) => Number(k) < 1 || Number(k) > questionCount));
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
@@ -222,7 +210,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
               className="w-64 h-64 object-contain rounded-lg mx-auto border"
             />
             <p className="text-xs text-gray-500 mt-1">
-              {Math.round(photo.length / 1024)} KB — {cameraResolution}
+              {Math.round(photo.length / 1024)} KB — {webcamRef.current?.video?.videoWidth}x{webcamRef.current?.video?.videoHeight} px
             </p>
           </div>
         )}
@@ -257,14 +245,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         {/* RESULTADOS */}
         {results && (
           <div className="mt-6">
-            {mismatch && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                <p className="text-yellow-800 text-sm">
-                  Atenção: a resposta da API foi normalizada para 1..{questionCount}.
-                </p>
-              </div>
-            )}
-
             <h3 className="text-lg font-semibold mb-2">Resumo</h3>
             <div className="grid grid-cols-5 gap-2 mb-4">
               {(["a", "b", "c", "d", "nula"] as Alt[]).map((k) => (
