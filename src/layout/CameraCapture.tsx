@@ -35,19 +35,39 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   }, []);
 
   const handleCapture = () => {
-  if (!webcamRef.current || !cameraReady) return;
+    if (!webcamRef.current || !cameraReady) return;
 
-  // Capture a imagem com maior resolução possível
-  const imageSrc = webcamRef.current.getScreenshot();
+    // Capture a imagem com maior resolução possível
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (imageSrc) {
+      const img = new Image();
+      img.src = imageSrc;
 
-  if (imageSrc) {
-    setPhoto(imageSrc);
-    setError(null);
-  } else {
-    setError("Não foi possível capturar a imagem.");
-  }
-};
+      img.onload = () => {
+        // Criando um canvas para manipular a imagem
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const maxWidth = 3000;  // Defina um tamanho máximo
+        const maxHeight = 4000;
 
+        // Definir a largura e altura com base na proporção da imagem
+        const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+
+        // Redimensionando a imagem no canvas
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Convertendo a imagem para PNG com alta qualidade
+        const highQualityImage = canvas.toDataURL('image/png'); // Formato PNG
+
+        setPhoto(highQualityImage);
+        setError(null);
+      };
+    } else {
+      setError("Não foi possível capturar a imagem.");
+    }
+  };
 
   // Envia a foto para a API
   const handleSubmit = async () => {
@@ -68,7 +88,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const blob = await fetch(photo).then((res) => res.blob());
 
       const formData = new FormData();
-      formData.append("imagem", blob, "high_quality_photo.png");
+      formData.append("imagem", blob, "high_quality_photo.png"); // Alterado para .png
       formData.append("numero_questoes", String(questionCount));
 
       const response = await fetch(apiUrl, {
@@ -116,7 +136,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           <Webcam
             audio={false}
             ref={webcamRef}
-            screenshotFormat="image/png"
+            screenshotFormat="image/png" // Usando PNG ao invés de JPG
             width="100%"
             videoConstraints={videoConstraints}
             onUserMediaError={() => {
