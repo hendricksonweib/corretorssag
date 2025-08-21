@@ -10,12 +10,11 @@ type ApiRaw = Record<string, string>;
 
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [photo, setPhoto] = useState<string | null>(null);
-  const [questionCount, setQuestionCount] = useState<number>(0);
+  const [questionCount, setQuestionCount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
-
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,15 +76,14 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setError(null);
   };
 
-
   const handleSubmit = async () => {
     if (!photo) {
       setError("Por favor, tire uma foto primeiro.");
       return;
     }
 
-    if (questionCount <= 0) {
-      setError("Por favor, informe o número de questões.");
+    if (questionCount.trim() === "" || Number(questionCount) <= 0 || Number(questionCount) > 60) {
+      setError("Por favor, informe um número de questões válido (1-60).");
       return;
     }
 
@@ -97,7 +95,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       const formData = new FormData();
       formData.append("imagem", blob, "high_quality_photo.png");
-      formData.append("numero_questoes", String(questionCount));
+      formData.append("numero_questoes", questionCount);
 
       console.log("📤 Enviando imagem:", {
         size: blob.size,
@@ -122,7 +120,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       console.log("✅ Resposta (bruta) da API:", rawJson);
       alert(JSON.stringify(rawJson, null, 2));
 
-
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
       setError(err?.message ? `Erro ao enviar: ${err.message}` : "Erro ao enviar os dados. Tente novamente.");
@@ -136,6 +133,17 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setTimeout(() => {
       if (webcamRef.current?.video) setCameraReady(true);
     }, 1000);
+  };
+
+  // Função para validar o input de questões
+  const handleQuestionCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Aceitar somente números entre 1 e 60
+    if (/^\d{0,2}$/.test(inputValue)) {
+      if (Number(inputValue) <= 60) {
+        setQuestionCount(inputValue);
+      }
+    }
   };
 
   return (
@@ -188,11 +196,12 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </label>
           <input
             id="questionCount"
-            type="number"
+            type="text"  // Mudando para "text" para controlar a entrada com regex
             value={questionCount}
-            onChange={(e) => setQuestionCount(Math.max(1, Number(e.target.value)))}
+            onChange={handleQuestionCountChange}
+            inputMode="numeric"  // Forçar teclado numérico no mobile
+            pattern="[0-9]*"     // Opcional, para dispositivos que não suportam "inputMode"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            min={1}
             placeholder="Ex: 60"
           />
         </div>
