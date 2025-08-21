@@ -19,7 +19,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Constraints de resolução (prioriza alta)
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment",
     width: { ideal: 4096 },
@@ -63,8 +62,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // PNG qualidade máxima
-    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);  // Garantindo alta qualidade
+    const highQualityPhoto = canvas.toDataURL("image/png", 1.0); 
 
     console.log("📸 Foto capturada:", {
       width: canvas.width,
@@ -135,10 +133,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     }, 1000);
   };
 
-  // Função para validar o input de questões
   const handleQuestionCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    // Aceitar somente números entre 1 e 60
     if (/^\d{0,2}$/.test(inputValue)) {
       if (Number(inputValue) <= 60) {
         setQuestionCount(inputValue);
@@ -147,10 +143,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-100">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-3xl p-6">
-        <h2 className="text-2xl font-semibold text-blue-600 text-center mb-4">
-          Tire a Foto do Gabarito
+    <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-lg p-4 flex-1">
+        <h2 className="text-xl font-semibold text-blue-600 text-center mb-4">
+          Capture o Gabarito
         </h2>
 
         <div className="w-full mb-4 relative">
@@ -171,18 +167,18 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           )}
         </div>
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-col gap-3 mb-4">
           <Button label="Capturar Foto" onClick={handleCapture} disabled={loading || !cameraReady} />
           <Button label="Recarregar Câmera" onClick={retryCamera} />
         </div>
 
         {photo && (
           <div className="mt-4 mb-4 text-center">
-            <h3 className="text-sm text-gray-500 mb-2">Pré-visualização (reduzida):</h3>
+            <h3 className="text-sm text-gray-500 mb-2">Pré-visualização:</h3>
             <img
               src={photo}
               alt="Captured HD"
-              className="w-64 h-64 object-contain rounded-lg mx-auto border"
+              className="w-48 h-48 object-contain rounded-lg mx-auto border"
             />
             <p className="text-xs text-gray-500 mt-1">
               {Math.round(photo.length / 1024)} KB — {cameraResolution}
@@ -196,11 +192,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </label>
           <input
             id="questionCount"
-            type="text"  // Mudando para "text" para controlar a entrada com regex
+            type="text"
             value={questionCount}
             onChange={handleQuestionCountChange}
-            inputMode="numeric"  // Forçar teclado numérico no mobile
-            pattern="[0-9]*"     // Opcional, para dispositivos que não suportam "inputMode"
+            inputMode="numeric"
+            pattern="[0-9]*"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             placeholder="Ex: 60"
           />
