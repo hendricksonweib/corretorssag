@@ -16,16 +16,20 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
 
+
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Ajuste para garantir que a resolução da câmera seja 1080x1920
+  // Constraints de resolução (prioriza alta)
   const videoConstraints: MediaTrackConstraints = {
-    facingMode: "environment", // Usando a câmera traseira
+    facingMode: "environment",
     width: { ideal: 1080 },
     height: { ideal: 1920 },
     advanced: [
-      { width: 1080, height: 1920 },
+      { width: 4096, height: 2160 },
+      { width: 3840, height: 2160 },
+      { width: 1920, height: 1080 },
+      { width: 1280, height: 720 },
     ],
   };
 
@@ -52,19 +56,13 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     if (!video || !canvas) return;
 
-    // Garantir que o canvas tenha o tamanho de 1080x1920
-    const targetWidth = 1080;
-    const targetHeight = 1920;
-
-    // Definir as dimensões do canvas para 1080x1920
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Desenha a imagem no canvas, redimensionando para 1080x1920
-    ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // PNG qualidade máxima
     const highQualityPhoto = canvas.toDataURL("image/png", 1.0);  // Garantindo alta qualidade
@@ -78,6 +76,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setPhoto(highQualityPhoto);
     setError(null);
   };
+
 
   const handleSubmit = async () => {
     if (!photo) {
@@ -122,6 +121,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       console.log("✅ Resposta (bruta) da API:", rawJson);
       alert(JSON.stringify(rawJson, null, 2));
+
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
