@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Button } from "../components/Button";
+import { SelectProvas } from "../components/selects/SelectProvas";
 
 interface CameraCaptureProps {
   apiUrl: string;
@@ -15,6 +16,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [error, setError] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
+  const [selectedProva, setSelectedProva] = useState<string>("");
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -85,6 +87,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       return;
     }
 
+    if (!selectedProva) {
+      setError("Por favor, selecione uma prova.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -94,6 +101,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       const formData = new FormData();
       formData.append("imagem", blob, "high_quality_photo.png");
       formData.append("numero_questoes", questionCount);
+      formData.append("prova_id", selectedProva); // Enviar o ID da prova selecionada
 
       console.log("📤 Enviando imagem:", {
         size: blob.size,
@@ -142,12 +150,21 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     }
   };
 
+  const handleProvaChange = (id: string) => {
+    setSelectedProva(id);
+  };
+
   return (
     <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
       <div className="bg-white rounded-lg shadow-md w-full max-w-lg p-4 flex-1">
         <h2 className="text-xl font-semibold text-blue-600 text-center mb-4">
           Capture o Gabarito
         </h2>
+
+        {/* Select Provas */}
+        <div className="w-full mb-4">
+          <SelectProvas value={selectedProva} onChange={handleProvaChange} />
+        </div>
 
         <div className="w-full mb-4 relative">
           <Webcam
