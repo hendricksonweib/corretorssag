@@ -17,9 +17,9 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Constraints de resolução (prioriza alta)
+  // Constraints de resolução
   const videoConstraints: MediaTrackConstraints = {
-    facingMode: "environment",
+    facingMode: "environment", // Garante que a câmera traseira seja usada
     width: { ideal: 4096 },
     height: { ideal: 2160 },
     advanced: [
@@ -59,6 +59,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       return;
     }
 
+    // Certifique-se de que o canvas tenha as mesmas dimensões do vídeo
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -85,59 +86,58 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   };
 
   const handleSubmit = async () => {
-  if (!photo) {
-    setError("Por favor, tire uma foto primeiro.");
-    return;
-  }
-
-  if (questionCount <= 0) {
-    setError("Por favor, informe o número de questões.");
-    return;
-  }
-
-  setLoading(true);
-  setError(null);
-
-  try {
-    const blob = await fetch(photo).then((res) => res.blob());
-
-    const formData = new FormData();
-    formData.append("imagem", blob, "high_quality_photo.png");
-    formData.append("numero_questoes", String(questionCount));
-
-    console.log("📤 Enviando imagem:", {
-      size: blob.size,
-      type: blob.type,
-    });
-
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro HTTP: ${response.status}`);
+    if (!photo) {
+      setError("Por favor, tire uma foto primeiro.");
+      return;
     }
 
-    const rawJson = await response.json();
-
-    if (rawJson.error || Object.keys(rawJson).length === 0) {
-      throw new Error("Erro na API: Nenhum dado válido retornado.");
+    if (questionCount <= 0) {
+      setError("Por favor, informe o número de questões.");
+      return;
     }
 
-    console.log("✅ Resposta (bruta) da API:", rawJson);
+    setLoading(true);
+    setError(null);
 
-    // Adicionando o alert para mostrar o JSON da resposta
-    alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
+    try {
+      const blob = await fetch(photo).then((res) => res.blob());
 
-  } catch (err: any) {
-    console.error("❌ Erro no envio:", err);
-    setError(err?.message ? `Erro ao enviar: ${err.message}` : "Erro ao enviar os dados. Tente novamente.");
-  } finally {
-    setLoading(false);
-  }
-};
+      const formData = new FormData();
+      formData.append("imagem", blob, "high_quality_photo.png");
+      formData.append("numero_questoes", String(questionCount));
 
+      console.log("📤 Enviando imagem:", {
+        size: blob.size,
+        type: blob.type,
+      });
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+
+      const rawJson = await response.json();
+
+      if (rawJson.error || Object.keys(rawJson).length === 0) {
+        throw new Error("Erro na API: Nenhum dado válido retornado.");
+      }
+
+      console.log("✅ Resposta (bruta) da API:", rawJson);
+
+      // Adicionando o alert para mostrar o JSON da resposta
+      alert(JSON.stringify(rawJson, null, 2)); // Exibe o JSON formatado
+
+    } catch (err: any) {
+      console.error("❌ Erro no envio:", err);
+      setError(err?.message ? `Erro ao enviar: ${err.message}` : "Erro ao enviar os dados. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const retryCamera = () => {
     setCameraReady(false);
@@ -159,7 +159,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             ref={webcamRef}
             screenshotFormat="image/png"
             width="100%"
-            mirrored={false}
+            mirrored={true}  // Defina "true" para espelhar a imagem ao vivo da câmera
             videoConstraints={videoConstraints}
             onUserMediaError={() => {
               setError("Erro ao acessar a câmera. Verifique as permissões.");
