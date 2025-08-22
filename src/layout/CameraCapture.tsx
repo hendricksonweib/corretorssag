@@ -164,55 +164,31 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const handleModalConfirm = async () => {
   try {
     // Parse do conteúdo do modal - CORREÇÃO COMPLETA
-    const respostasString = modalContent;
-    let respostas = {};
+    const respostasObj = JSON.parse(modalContent);
 
-    if (respostasString && typeof respostasString === 'string') {
-      try {
-        // Remove as aspas externas e converte escapes
-        const cleanJson = respostasString
-          .trim()
-          .replace(/^"|"$/g, '') // Remove aspas do início e fim
-          .replace(/\\"/g, '"'); // Converte \" para "
-        
-        respostas = JSON.parse(cleanJson);
-        console.log('Respostas parseadas corretamente:', respostas);
-        
-      } catch (parseError) {
-        console.error('Erro ao fazer parse do JSON:', parseError);
-        // Tenta alternativa caso o método acima falhe
-        try {
-          respostas = JSON.parse(JSON.parse(respostasString));
-        } catch (doubleParseError) {
-          console.error('Erro no duplo parse:', doubleParseError);
-          throw new Error('Formato inválido das respostas');
-        }
+    // Criar o payload no formato esperado pela API
+    const payload = [
+      {
+        resposta: respostasObj,
+        exam_id: selectedProva
       }
-    }
+    ];
 
-    // Converter o objeto em array para o formato esperado pela API
-    const payload = Object.entries(respostas)
-      .map(([id, resposta]) => ({
-        exam_id: selectedProva,
-        id: parseInt(id),
-        resposta: resposta
-      }));
 
-    // Exibir no console o conteúdo que será enviado
-    console.log("Payload para API:", payload);
+    const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
 
-    // Enviando para a API
     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-KEY": `${import.meta.env.VITE_API_URL}`
+        "X-API-KEY": apiKey
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      throw new Error(`Erro HTTP: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
@@ -225,8 +201,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setShowModal(false);
   }
 };
-
-
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
