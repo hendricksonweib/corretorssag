@@ -49,6 +49,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   // Função para contar as respostas
   const countRespostas = (gabarito: any) => {
+    const gabaritoObj = JSON.parse(gabarito);
     const count = {
       a: 0,
       b: 0,
@@ -56,18 +57,23 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       d: 0,
       nula: 0,
     };
-    for (const key in gabarito) {
-      if (gabarito[key] === "a") count.a++;
-      if (gabarito[key] === "b") count.b++;
-      if (gabarito[key] === "c") count.c++;
-      if (gabarito[key] === "d") count.d++;
-      if (gabarito[key] === "nula") count.nula++;
+    for (const key in gabaritoObj) {
+      if (gabaritoObj[key] === "a") count.a++;
+      if (gabaritoObj[key] === "b") count.b++;
+      if (gabaritoObj[key] === "c") count.c++;
+      if (gabaritoObj[key] === "d") count.d++;
+      if (gabaritoObj[key] === "nula") count.nula++;
     }
     setRespostasCount(count);
   };
 
   // Função para mapear e exibir o gabarito em tabela
   const renderGabarito = (gabarito: any) => {
+    // Parse o gabarito se for uma string
+    const gabaritoObj = JSON.parse(gabarito);
+    
+    console.log(gabaritoObj);  
+    
     return (
       <table className="min-w-full table-auto">
         <thead>
@@ -77,10 +83,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </tr>
         </thead>
         <tbody>
-          {Object.keys(gabarito).map((key) => (
+          {Object.keys(gabaritoObj).map((key) => (
             <tr key={key}>
               <td className="border px-4 py-2">{key}</td>
-              <td className="border px-4 py-2">{gabarito[key]}</td>
+              <td className="border px-4 py-2">{gabaritoObj[key]}</td>
             </tr>
           ))}
         </tbody>
@@ -186,6 +192,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       setGabarito(rawJson);
       countRespostas(rawJson);
 
+      console.log(rawJson)
+
       // Exibe o modal com os logs da resposta
       setModalContent(JSON.stringify(rawJson, null, 2));
       setShowModal(true);
@@ -227,6 +235,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       // Parse do conteúdo do modal - CORREÇÃO COMPLETA
       const respostasObj = JSON.parse(modalContent);
 
+      console.log(respostasObj)
       // Criar o payload no formato esperado pela API
       const payload = [
         {
