@@ -19,6 +19,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [selectedProva, setSelectedProva] = useState<string>("");
   const [showModal, setShowModal] = useState(false);  // Modal control
   const [modalContent, setModalContent] = useState<string>("");
+  const [isCadastrado, setIsCadastrado] = useState(true);
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -104,6 +105,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       formData.append("imagem", blob, "high_quality_photo.png");
       formData.append("numero_questoes", questionCount);
       formData.append("prova_id", selectedProva);
+
+      if (!isCadastrado) {
+        formData.append("not_cadast", "1");
+      }
 
       console.log("📤 Enviando imagem:", {
         size: blob.size,
@@ -249,6 +254,19 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             </p>
           </div>
         )}
+
+        {/* ← ADICIONAR ESTE CHECKBOX */}
+        <div className="w-full mb-4">
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={isCadastrado}
+              onChange={(e) => setIsCadastrado(e.target.checked)}
+              className="mr-2"
+            />
+            <span className="text-sm text-gray-700">Aluno é cadastrado</span>
+          </label>
+        </div>
 
         <div className="w-full mb-4">
           <label htmlFor="questionCount" className="block text-sm text-gray-700 mb-2">
