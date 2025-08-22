@@ -7,7 +7,7 @@ interface CameraCaptureProps {
   apiUrl: string;
 }
 
-type ApiRaw = Record<string, string>;
+type ApiRaw = Record<string, any>;  // Alterado para refletir o formato da resposta
 
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [photo, setPhoto] = useState<string | null>(null);
@@ -17,8 +17,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
-
-  const [showModal, setShowModal] = useState(false);  // Controlar o estado do modal
+  const [showModal, setShowModal] = useState(false);  // Modal control
   const [modalContent, setModalContent] = useState<string>("");
 
   const webcamRef = useRef<Webcam>(null);
@@ -162,10 +161,37 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setShowModal(false);
   };
 
-  const handleModalConfirm = () => {
+  const handleModalConfirm = async () => {
     // Ação após o usuário confirmar
-    setShowModal(false);
-    alert("Correção confirmada!");
+    try {
+      // Montar o formato esperado pela sua API
+      const respostas = modalContent ? JSON.parse(modalContent) : [];
+      const payload = respostas.map((resposta: any) => ({
+        exam_id: selectedProva,
+        id: resposta.id,
+        resposta: resposta.resposta,
+      }));
+  console.log("Enviando para a API com o payload:", JSON.stringify(payload, null, 2));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+      alert("Respostas enviadas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao enviar as respostas:", error);
+      alert("Erro ao enviar as respostas.");
+    } finally {
+      setShowModal(false);
+    }
   };
 
   return (
