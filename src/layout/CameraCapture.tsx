@@ -21,9 +21,20 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [modalContent, setModalContent] = useState<string>("");
   const [isCadastrado, setIsCadastrado] = useState(true);
 
+  // Variáveis para armazenar os resultados do gabarito e contagem das respostas
+  const [gabarito, setGabarito] = useState<any>(null);  // Gabarito completo
+  const [respostasCount, setRespostasCount] = useState<any>({
+    a: 0,
+    b: 0,
+    c: 0,
+    d: 0,
+    nula: 0,
+  });
+
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Definições para a resolução da câmera
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment",
     width: { ideal: 4096 },
@@ -34,6 +45,47 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       { width: 1920, height: 1080 },
       { width: 1280, height: 720 },
     ],
+  };
+
+  // Função para contar as respostas
+  const countRespostas = (gabarito: any) => {
+    const count = {
+      a: 0,
+      b: 0,
+      c: 0,
+      d: 0,
+      nula: 0,
+    };
+    for (const key in gabarito) {
+      if (gabarito[key] === "a") count.a++;
+      if (gabarito[key] === "b") count.b++;
+      if (gabarito[key] === "c") count.c++;
+      if (gabarito[key] === "d") count.d++;
+      if (gabarito[key] === "nula") count.nula++;
+    }
+    setRespostasCount(count);
+  };
+
+  // Função para mapear e exibir o gabarito em tabela
+  const renderGabarito = (gabarito: any) => {
+    return (
+      <table className="min-w-full table-auto">
+        <thead>
+          <tr>
+            <th className="border px-4 py-2">Questão</th>
+            <th className="border px-4 py-2">Resposta</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.keys(gabarito).map((key) => (
+            <tr key={key}>
+              <td className="border px-4 py-2">{key}</td>
+              <td className="border px-4 py-2">{gabarito[key]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   };
 
   useEffect(() => {
@@ -130,6 +182,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error("Nenhum dado retornado da API.");
       }
 
+      // Armazena o gabarito e calcula as respostas
+      setGabarito(rawJson);
+      countRespostas(rawJson);
+
       // Exibe o modal com os logs da resposta
       setModalContent(JSON.stringify(rawJson, null, 2));
       setShowModal(true);
@@ -167,45 +223,44 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   };
 
   const handleModalConfirm = async () => {
-  try {
-    // Parse do conteúdo do modal - CORREÇÃO COMPLETA
-    const respostasObj = JSON.parse(modalContent);
+    try {
+      // Parse do conteúdo do modal - CORREÇÃO COMPLETA
+      const respostasObj = JSON.parse(modalContent);
 
-    // Criar o payload no formato esperado pela API
-    const payload = [
-      {
-        resposta: respostasObj,
-        exam_id: selectedProva
+      // Criar o payload no formato esperado pela API
+      const payload = [
+        {
+          resposta: respostasObj,
+          exam_id: selectedProva
+        }
+      ];
+
+      const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": apiKey
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
       }
-    ];
 
+      const result = await response.json();
+      console.log('Resposta da API:', result);
 
-    const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
-
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-KEY": apiKey
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+      alert("Respostas enviadas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao enviar as respostas:", error);
+    } finally {
+      setShowModal(false);
     }
-
-    const result = await response.json();
-    console.log('Resposta da API:', result);
-
-    alert("Respostas enviadas com sucesso!");
-  } catch (error) {
-    console.error("Erro ao enviar as respostas:", error);
-  } finally {
-    setShowModal(false);
-  }
-};
+  };
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
@@ -255,7 +310,24 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </div>
         )}
 
-        {/* ← ADICIONAR ESTE CHECKBOX */}
+        {/* Exibe o gabarito após foto */}
+        {gabarito && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Gabarito:</h3>
+            {renderGabarito(gabarito)}
+            <div className="mt-4">
+              <p className="text-sm">Total de Respostas:</p>
+              <ul className="list-disc pl-5">
+                <li>Resposta A: {respostasCount.a}</li>
+                <li>Resposta B: {respostasCount.b}</li>
+                <li>Resposta C: {respostasCount.c}</li>
+                <li>Resposta D: {respostasCount.d}</li>
+                <li>Resposta Nula: {respostasCount.nula}</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
         <div className="w-full mb-4">
           <label className="flex items-center">
             <input
