@@ -162,24 +162,51 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   };
 
   const handleModalConfirm = async () => {
-  // Ação após o usuário confirmar
   try {
-    // Montar o formato esperado pela sua API
-    const respostas = modalContent ? JSON.parse(modalContent) : [];
-    const payload = respostas.map((resposta: any) => ({
-      exam_id: selectedProva,
-      id: resposta.id,
-      resposta: resposta.resposta,
-    }));
+    // Parse do conteúdo do modal - CORREÇÃO COMPLETA
+    const respostasString = modalContent;
+    let respostas = {};
+
+    if (respostasString && typeof respostasString === 'string') {
+      try {
+        // Remove as aspas externas e converte escapes
+        const cleanJson = respostasString
+          .trim()
+          .replace(/^"|"$/g, '') // Remove aspas do início e fim
+          .replace(/\\"/g, '"'); // Converte \" para "
+        
+        respostas = JSON.parse(cleanJson);
+        console.log('Respostas parseadas corretamente:', respostas);
+        
+      } catch (parseError) {
+        console.error('Erro ao fazer parse do JSON:', parseError);
+        // Tenta alternativa caso o método acima falhe
+        try {
+          respostas = JSON.parse(JSON.parse(respostasString));
+        } catch (doubleParseError) {
+          console.error('Erro no duplo parse:', doubleParseError);
+          throw new Error('Formato inválido das respostas');
+        }
+      }
+    }
+
+    // Converter o objeto em array para o formato esperado pela API
+    const payload = Object.entries(respostas)
+      .map(([id, resposta]) => ({
+        exam_id: selectedProva,
+        id: parseInt(id),
+        resposta: resposta
+      }));
 
     // Exibir no console o conteúdo que será enviado
-    console.log("Enviando para a API com o payload:", JSON.stringify(payload, null, 2));
+    console.log("Payload para API:", payload);
 
     // Enviando para a API
     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-API-KEY": `${import.meta.env.VITE_API_URL}`
       },
       body: JSON.stringify(payload),
     });
@@ -188,17 +215,17 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       throw new Error(`Erro HTTP: ${response.status}`);
     }
 
-    // Remover a variável result, pois ela não está sendo usada
-    await response.json();
+    const result = await response.json();
+    console.log('Resposta da API:', result);
 
     alert("Respostas enviadas com sucesso!");
   } catch (error) {
     console.error("Erro ao enviar as respostas:", error);
-    alert("Erro ao enviar as respostas.");
   } finally {
     setShowModal(false);
   }
 };
+
 
 
   return (
