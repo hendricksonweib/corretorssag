@@ -162,37 +162,44 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   };
 
   const handleModalConfirm = async () => {
-    // Ação após o usuário confirmar
-    try {
-      // Montar o formato esperado pela sua API
-      const respostas = modalContent ? JSON.parse(modalContent) : [];
-      const payload = respostas.map((resposta: any) => ({
-        exam_id: selectedProva,
-        id: resposta.id,
-        resposta: resposta.resposta,
-      }));
-  console.log("Enviando para a API com o payload:", JSON.stringify(payload, null, 2));
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+  // Ação após o usuário confirmar
+  try {
+    // Montar o formato esperado pela sua API
+    const respostas = modalContent ? JSON.parse(modalContent) : [];
+    const payload = respostas.map((resposta: any) => ({
+      exam_id: selectedProva,
+      id: resposta.id,
+      resposta: resposta.resposta,
+    }));
 
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`);
-      }
+    // Exibir no console o conteúdo que será enviado
+    console.log("Enviando para a API com o payload:", JSON.stringify(payload, null, 2));
 
-      const result = await response.json();
-      alert("Respostas enviadas com sucesso!");
-    } catch (error) {
-      console.error("Erro ao enviar as respostas:", error);
-      alert("Erro ao enviar as respostas.");
-    } finally {
-      setShowModal(false);
+    // Enviando para a API
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro HTTP: ${response.status}`);
     }
-  };
+
+    // Remover a variável result, pois ela não está sendo usada
+    await response.json();
+
+    alert("Respostas enviadas com sucesso!");
+  } catch (error) {
+    console.error("Erro ao enviar as respostas:", error);
+    alert("Erro ao enviar as respostas.");
+  } finally {
+    setShowModal(false);
+  }
+};
+
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
