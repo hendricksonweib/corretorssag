@@ -3,7 +3,7 @@ import { Header } from "../components/Header";
 import CameraCapture from "../layout/CameraCapture";
 
 export default function GabaritoPage() {
-  const apiUrl = "https://d50b6b1edd5c.ngrok-free.app/api/leitor/";
+  const apiUrl = "https://gerador-gabarito-corretor-experimental.lh6c5d.easypanel.host/api/leitor/";
   return (
     <>
       <Header />
