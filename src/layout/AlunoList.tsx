@@ -80,8 +80,9 @@ export const AlunoList = ({
     }
   }, [reload, onReloadDone]);
 
-  const handleCameraClick = () => {
-    navigate("/gabaritos"); // Navega para a página de correção
+  // 👇 função para passar o alunoId na navegação
+  const handleCameraClick = (alunoId: number) => {
+    navigate("/gabaritos", { state: { alunoId } });  // Passa o alunoId para a próxima página
   };
 
   return (
@@ -116,11 +117,11 @@ export const AlunoList = ({
               </span>
             )}
 
-            {/* Ícone de Câmera que agora redireciona para /correcao */}
+            {/* Ícone de Câmera que agora redireciona para /gabaritos */}
             <Camera
               size={20}
               className="text-blue-600 cursor-pointer hover:text-blue-800"
-              onClick={handleCameraClick} // Adicionando a funcionalidade de navegação
+              onClick={() => handleCameraClick(aluno.id)} // Passando o alunoId
             />
           </div>
         </div>

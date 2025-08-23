@@ -2,14 +2,19 @@ import { useState, useRef, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Button } from "../components/Button";
 import { SelectProvas } from "../components/selects/SelectProvas";
+import { useLocation } from "react-router-dom"; // AQUI: Importando useLocation para pegar o alunoId
 
 interface CameraCaptureProps {
   apiUrl: string;
 }
 
-type ApiRaw = Record<string, any>;  // Alterado para refletir o formato da resposta
+type ApiRaw = Record<string, any>; 
 
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
+  // AQUI: Pegando o alunoId da navegação
+  const location = useLocation();
+  const alunoId = location.state?.alunoId ?? null; // AQUI: O alunoId vem da navegação
+
   const [photo, setPhoto] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -232,15 +237,15 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleModalConfirm = async () => {
     try {
-      // Parse do conteúdo do modal - CORREÇÃO COMPLETA
+      // AQUI: Adicionando o alunoId no payload
       const respostasObj = JSON.parse(modalContent);
 
       console.log(respostasObj)
-      // Criar o payload no formato esperado pela API
       const payload = [
         {
           resposta: respostasObj,
-          exam_id: selectedProva
+          exam_id: selectedProva,
+          id: alunoId // AQUI: Incluindo o alunoId no payload
         }
       ];
 
@@ -313,9 +318,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
               alt="Captured HD"
               className="w-48 h-48 object-contain rounded-lg mx-auto border"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              {Math.round(photo.length / 1024)} KB — {cameraResolution}
-            </p>
           </div>
         )}
 
