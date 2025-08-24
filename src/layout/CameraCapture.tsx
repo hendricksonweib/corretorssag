@@ -23,7 +23,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
   const [showModal, setShowModal] = useState(false);  // Modal control
-  const [modalContent, setModalContent] = useState<string>("");
+  const [modalContent, setModalContent] = useState<any>(null);
   const [isCadastrado, setIsCadastrado] = useState(true);
 
   // Variáveis para armazenar os resultados do gabarito e contagem das respostas
@@ -54,7 +54,14 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   // Função para contar as respostas
   const countRespostas = (gabarito: any) => {
-    const gabaritoObj = JSON.parse(gabarito);
+    let gabaritoObj = gabarito;
+  if (typeof gabarito === "string") {
+    try {
+      gabaritoObj = JSON.parse(gabarito);
+    } catch {
+      gabaritoObj = {};
+    }
+  }
     const count = {
       a: 0,
       b: 0,
@@ -75,7 +82,14 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // Função para mapear e exibir o gabarito em tabela
   const renderGabarito = (gabarito: any) => {
     // Parse o gabarito se for uma string
-    const gabaritoObj = JSON.parse(gabarito);
+    let gabaritoObj = gabarito;
+  if (typeof gabarito === "string") {
+    try {
+      gabaritoObj = JSON.parse(gabarito);
+    } catch {
+      gabaritoObj = {};
+    }
+  }
     
     console.log(gabaritoObj);  
     
@@ -187,7 +201,15 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const rawJson = await response.json() as ApiRaw;
+      let rawJson = await response.json() as ApiRaw;
+
+      if (typeof rawJson === "string") {
+      try {
+        rawJson = JSON.parse(rawJson);
+      } catch {
+        rawJson = {};
+      }
+    }
 
       if (Object.keys(rawJson).length === 0) {
         throw new Error("Nenhum dado retornado da API.");
@@ -195,12 +217,12 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       // Armazena o gabarito e calcula as respostas
       setGabarito(rawJson);
-      countRespostas(rawJson);
+      countRespostas(JSON.stringify(rawJson));
 
       console.log(rawJson)
 
       // Exibe o modal com os logs da resposta
-      setModalContent(JSON.stringify(rawJson, null, 2));
+      setModalContent(rawJson);
       setShowModal(true);
 
     } catch (err: any) {
@@ -237,13 +259,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleModalConfirm = async () => {
     try {
-      // AQUI: Adicionando o alunoId no payload
-      const respostasObj = JSON.parse(modalContent);
-
-      console.log(respostasObj)
+      
       const payload = [
         {
-          resposta: respostasObj,
+          resposta: modalContent,
           exam_id: selectedProva,
           id: alunoId // AQUI: Incluindo o alunoId no payload
         }
@@ -259,6 +278,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         },
         body: JSON.stringify(payload),
       });
+
+      console.log("AQUIIIII ESTÁAAAAA O PAYLOAD")
+      console.log(payload)
+      alert("Payload: " + JSON.stringify(payload))
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -384,7 +407,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Log de Resposta da API</h3>
-              <pre className="text-sm text-gray-700 whitespace-pre-wrap">{modalContent}</pre>
+              <pre className="text-sm text-gray-700 whitespace-pre-wrap">{JSON.stringify(modalContent, null, 2)}</pre>
               <div className="mt-4 flex justify-end gap-3">
                 <Button label="Corrigir" onClick={handleModalClose} />
                 <Button label="Confirmar" onClick={handleModalConfirm} />
