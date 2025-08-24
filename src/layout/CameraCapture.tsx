@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Button } from "../components/Button";
 import { SelectProvas } from "../components/selects/SelectProvas";
-import { useLocation } from "react-router-dom"; // AQUI: Importando useLocation para pegar o alunoId
+import { useLocation } from "react-router-dom";
 
 interface CameraCaptureProps {
   apiUrl: string;
