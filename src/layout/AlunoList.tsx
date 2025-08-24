@@ -5,9 +5,10 @@ import {
   AlertCircle,
   X,
   School,
-  IdCard,
   GraduationCap,
   Star,
+  Search,
+  Filter,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,7 +22,6 @@ interface Aluno {
   turma: Turma;
   escola: Escola;
   nota: string;
-  // não exibiremos "prova" na lista
   prova?: { id: number; nome: string } | null;
 }
 
@@ -170,8 +170,23 @@ export const AlunoList = ({
 
   const NotaBadge = ({ nota }: { nota: string }) => {
     if (!nota || nota === "S/N") return null;
+    const notaNum = parseFloat(nota);
+    let bgColor = "bg-slate-100";
+    let textColor = "text-slate-700";
+    
+    if (notaNum >= 8) {
+      bgColor = "bg-emerald-100";
+      textColor = "text-emerald-700";
+    } else if (notaNum >= 6) {
+      bgColor = "bg-amber-100";
+      textColor = "text-amber-700";
+    } else if (notaNum > 0) {
+      bgColor = "bg-rose-100";
+      textColor = "text-rose-700";
+    }
+    
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">
+      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${bgColor} ${textColor} ring-1 ring-opacity-50 ${textColor.replace('text-', 'ring-')}`}>
         <Star size={14} className="opacity-90" />
         {nota}
       </span>
@@ -201,18 +216,38 @@ export const AlunoList = ({
   return (
     <>
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Header */}
+        {/* Header melhorado para desktop */}
         <div className="sticky top-0 z-10 bg-white/85 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between">
-          <div className="text-[13px] sm:text-sm text-slate-600">
-            <strong className="text-slate-900">{page}</strong>
-            <span className="text-slate-400"> / </span>
-            <strong className="text-slate-900">{totalPages}</strong>
-            <span className="text-slate-300 mx-2">•</span>
-            <span>Total: {totalItems}</span>
+          <div className="flex items-center gap-4">
+            <div className="text-[13px] sm:text-sm text-slate-600">
+              <span className="hidden sm:inline">Página </span>
+              <strong className="text-slate-900">{page}</strong>
+              <span className="text-slate-400"> de </span>
+              <strong className="text-slate-900">{totalPages}</strong>
+              <span className="text-slate-300 mx-2">•</span>
+              <span>Total: {totalItems}</span>
+            </div>
+            
+            {/* Filtros ativos visíveis apenas no desktop */}
+            <div className="hidden md:flex items-center gap-2">
+              {searchNome && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700">
+                  <Search size={12} />
+                  {searchNome}
+                </span>
+              )}
+              {(escolaId || turmaId) && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-700">
+                  <Filter size={12} />
+                  Filtros ativos
+                </span>
+              )}
+            </div>
           </div>
+          
           <button
             onClick={() => fetchAlunos({ resetPage: true })}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm px-2.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition"
             aria-label="Atualizar lista"
             title="Atualizar"
           >
@@ -223,7 +258,7 @@ export const AlunoList = ({
 
         {/* Estados */}
         {initialLoading && (
-          <div className="p-4 sm:p-6 grid grid-cols-1 gap-3">
+          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -268,66 +303,65 @@ export const AlunoList = ({
           </div>
         )}
 
-        {/* ======= LISTA (hierarquia clara / nome sem truncar) ======= */}
+        {/* ======= LISTA (layout responsivo melhorado) ======= */}
         {!initialLoading && !error && alunos.length > 0 && (
-          <div className="p-2 sm:p-4 space-y-2.5 sm:space-y-3">
+          <div className="p-2 sm:p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {alunos.map((aluno) => (
-              <button
+              <div
                 key={aluno.id}
-                onClick={() => openAlunoDetails(aluno)}
                 className="group w-full text-left rounded-2xl border border-slate-200 bg-white shadow-[0_1px_0_0_rgba(2,6,23,0.04)] hover:shadow-[0_8px_24px_-12px_rgba(2,6,23,0.25)] transition-all overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-[auto,1fr,auto] gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4 items-center">
-                  {/* Avatar */}
-                  <div className="sm:row-span-2">
-                    <Avatar name={aluno.nome} />
-                  </div>
+                <button 
+                  onClick={() => openAlunoDetails(aluno)}
+                  className="w-full text-left"
+                >
+                  <div className="flex flex-col gap-3 px-4 py-4">
+                    {/* Cabeçalho com avatar e informações básicas */}
+                    <div className="flex items-start justify-between">
+                      <Avatar name={aluno.nome} />
+                      <div className="flex flex-col items-end gap-1">
+                        <NotaBadge nota={aluno.nota} />
+                        <span className="text-xs text-slate-500">ID: {aluno.id}</span>
+                      </div>
+                    </div>
 
-                  {/* Bloco textual */}
-                  <div className="min-w-0">
-                    {/* Nome (sem truncar) */}
-                    <p className="text-slate-900 font-semibold text-[15px] sm:text-base leading-snug whitespace-normal break-words">
-                      {aluno.nome}
-                    </p>
+                    {/* Nome do aluno */}
+                    <div>
+                      <h3 className="text-slate-900 font-semibold text-base leading-snug whitespace-normal break-words line-clamp-2">
+                        {aluno.nome}
+                      </h3>
+                    </div>
 
-                    {/* ID discreto */}
-                    <p className="mt-0.5 text-[12px] sm:text-[13px] text-slate-500 flex items-center gap-1.5">
-                      <IdCard size={14} className="text-slate-400" />
-                      ID: <span className="text-slate-600">{aluno.id}</span>
-                    </p>
-                  </div>
-
-                  {/* Ações (nota + câmera) */}
-                  <div className="sm:row-span-2 sm:self-stretch flex sm:flex-col items-center sm:items-end gap-2">
-                    <NotaBadge nota={aluno.nota} />
-                    <button
-                      onClick={(e) => handleCameraClick(aluno.id, e)}
-                      aria-label={`Abrir gabaritos do aluno ${aluno.nome}`}
-                      className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-blue-200 text-blue-700 bg-blue-50/40 hover:bg-blue-50 active:scale-[0.98] transition"
-                      title="Ir para gabaritos"
-                    >
-                      <Camera size={18} />
-                    </button>
-                  </div>
-
-                  {/* Escola e Turma */}
-                  <div className="sm:col-start-2 sm:col-end-2 -mt-1">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] sm:text-[13px] text-slate-700">
-                      <span className="inline-flex items-center gap-1.5">
-                        <School size={14} className="text-slate-400" />
-                        Escola: <span className="font-medium text-slate-900">{aluno.escola?.nome || "N/A"}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <GraduationCap size={14} className="text-slate-400" />
-                        Turma: <span className="font-medium text-slate-900">{aluno.turma?.nome || "N/A"}</span>
-                      </span>
+                    {/* Informações da escola e turma */}
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <School size={14} className="text-slate-400 flex-shrink-0" />
+                        <span className="truncate">{aluno.escola?.nome || "N/A"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <GraduationCap size={14} className="text-slate-400 flex-shrink-0" />
+                        <span className="truncate">{aluno.turma?.nome || "N/A"}</span>
+                      </div>
                     </div>
                   </div>
+                </button>
+
+                {/* Botão de ação - Câmera */}
+                <div className="px-4 pb-4 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={(e) => handleCameraClick(aluno.id, e)}
+                    aria-label={`Abrir gabaritos do aluno ${aluno.nome}`}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-blue-200 text-blue-700 bg-blue-50/40 hover:bg-blue-50 active:scale-[0.98] transition"
+                    title="Ir para gabaritos"
+                  >
+                    <Camera size={16} />
+                    <span className="text-sm font-medium">Acessar Gabaritos</span>
+                  </button>
                 </div>
 
                 {/* realce sutil no hover */}
                 <div className="pointer-events-none h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/15 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition" />
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -335,7 +369,10 @@ export const AlunoList = ({
         {/* Sentinela + loader */}
         <div ref={sentinelRef} />
         {loading && !initialLoading && (
-          <div className="py-3 text-center text-xs text-slate-500">Carregando…</div>
+          <div className="py-6 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
+            <RefreshCw size={16} className="animate-spin" />
+            <span>Carregando mais alunos...</span>
+          </div>
         )}
       </div>
 
@@ -346,10 +383,10 @@ export const AlunoList = ({
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeModal} />
 
           {/* Conteúdo */}
-          <div className="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center">
-            <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+          <div className="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center p-4">
+            <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
               {/* Header gradiente */}
-              <div className="relative px-5 sm:px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+              <div className="sticky top-0 z-10 px-5 sm:px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center font-semibold">
                     {(selectedAluno.nome?.split(" ").map((n) => n[0]).slice(0, 2).join("") || "?").toUpperCase()}
@@ -380,10 +417,10 @@ export const AlunoList = ({
               </div>
 
               {/* Footer */}
-              <div className="px-5 sm:px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+              <div className="sticky bottom-0 bg-white border-t border-slate-200 px-5 sm:px-6 py-4 flex items-center justify-end gap-2">
                 <button
                   onClick={closeModal}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-white text-sm"
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm"
                 >
                   Fechar
                 </button>
