@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Button } from "../components/Button";
 import { SelectProvas } from "../components/selects/SelectProvas";
-import { useLocation } from "react-router-dom"; // AQUI: Importando useLocation para pegar o alunoId
+import { useLocation } from "react-router-dom";
 
 interface CameraCaptureProps {
   apiUrl: string;
@@ -13,8 +13,7 @@ type ApiRaw = Record<string, any>;
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   // AQUI: Pegando o alunoId da navegação
   const location = useLocation();
-  const alunoId = location.state?.alunoId ?? null; // AQUI: O alunoId vem da navegação
-
+  const alunoId = location.state?.alunoId ?? null; 
   const [photo, setPhoto] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -22,11 +21,15 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
+<<<<<<< HEAD
   const [showModal, setShowModal] = useState(false);  // Modal control
   const [modalContent, setModalContent] = useState<any>(null);
+=======
+  const [showModal, setShowModal] = useState(false); 
+  const [modalContent, setModalContent] = useState<string>("");
+>>>>>>> 17be9703ae5b9c85c391890efec5db612c0de989
   const [isCadastrado, setIsCadastrado] = useState(true);
 
-  // Variáveis para armazenar os resultados do gabarito e contagem das respostas
   const [gabarito, setGabarito] = useState<any>(null);  // Gabarito completo
   const [respostasCount, setRespostasCount] = useState<any>({
     a: 0,
@@ -39,7 +42,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Definições para a resolução da câmera
   const videoConstraints: MediaTrackConstraints = {
     facingMode: "environment",
     width: { ideal: 4096 },
@@ -52,7 +54,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     ],
   };
 
-  // Função para contar as respostas
   const countRespostas = (gabarito: any) => {
     let gabaritoObj = gabarito;
   if (typeof gabarito === "string") {
@@ -79,7 +80,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setRespostasCount(count);
   };
 
-  // Função para mapear e exibir o gabarito em tabela
   const renderGabarito = (gabarito: any) => {
     // Parse o gabarito se for uma string
     let gabaritoObj = gabarito;
@@ -215,14 +215,17 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         throw new Error("Nenhum dado retornado da API.");
       }
 
-      // Armazena o gabarito e calcula as respostas
       setGabarito(rawJson);
       countRespostas(JSON.stringify(rawJson));
 
       console.log(rawJson)
 
+<<<<<<< HEAD
       // Exibe o modal com os logs da resposta
       setModalContent(rawJson);
+=======
+      setModalContent(JSON.stringify(rawJson, null, 2));
+>>>>>>> 17be9703ae5b9c85c391890efec5db612c0de989
       setShowModal(true);
 
     } catch (err: any) {
@@ -259,12 +262,18 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleModalConfirm = async () => {
     try {
+<<<<<<< HEAD
       
+=======
+      const respostasObj = JSON.parse(modalContent);
+
+      console.log(respostasObj)
+>>>>>>> 17be9703ae5b9c85c391890efec5db612c0de989
       const payload = [
         {
           resposta: modalContent,
           exam_id: selectedProva,
-          id: alunoId // AQUI: Incluindo o alunoId no payload
+          id: alunoId 
         }
       ];
 
@@ -301,7 +310,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-lg p-4 flex-1">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-lg sm:max-w-md p-4 flex-1">
         <h2 className="text-xl font-semibold text-blue-600 text-center mb-4">
           Capture o Gabarito
         </h2>
@@ -328,6 +337,10 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           )}
         </div>
 
+        <div className="text-sm text-gray-500 mt-2">
+          Resolução da câmera: {cameraResolution}
+        </div>
+
         <div className="flex flex-col gap-3 mb-4">
           <Button label="Capturar Foto" onClick={handleCapture} disabled={loading || !cameraReady} />
           <Button label="Recarregar Câmera" onClick={retryCamera} />
@@ -344,7 +357,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </div>
         )}
 
-        {/* Exibe o gabarito após foto */}
         {gabarito && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-800">Gabarito:</h3>
@@ -402,7 +414,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           disabled={loading || !photo}
         />
 
-        {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
