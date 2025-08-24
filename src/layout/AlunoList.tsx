@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, RefreshCw, AlertCircle, X, School, IdCard, GraduationCap, Star } from "lucide-react";
+import {
+  Camera,
+  RefreshCw,
+  AlertCircle,
+  X,
+  School,
+  IdCard,
+  GraduationCap,
+  Star,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface Turma { id: number; nome: string; }
@@ -12,6 +21,7 @@ interface Aluno {
   turma: Turma;
   escola: Escola;
   nota: string;
+  // não exibiremos "prova" na lista
   prova?: { id: number; nome: string } | null;
 }
 
@@ -89,23 +99,28 @@ export const AlunoList = ({
     }
   };
 
+  // primeira carga / mudança de página
   useEffect(() => {
     fetchAlunos({ append: page > 1 && !initialLoading });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
+  // mudança de filtros
   useEffect(() => {
     setPage(1);
     fetchAlunos({ resetPage: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey]);
 
+  // reload externo
   useEffect(() => {
-    if (reload) fetchAlunos({ resetPage: true }).then(() => onReloadDone?.());
+    if (reload) {
+      fetchAlunos({ resetPage: true }).then(() => onReloadDone?.());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reload]);
 
-  // Infinite scroll
+  // infinite scroll
   useEffect(() => {
     if (!sentinelRef.current) return;
     const observer = new IntersectionObserver(
@@ -122,6 +137,7 @@ export const AlunoList = ({
     return () => observer.disconnect();
   }, [page, totalPages, loading, initialLoading, error]);
 
+  // ações
   const handleCameraClick = (alunoId: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
     navigate("/gabaritos", { state: { alunoId } });
@@ -138,14 +154,10 @@ export const AlunoList = ({
     setSelectedAluno(null);
   };
 
+  // UI helpers
   const Avatar = ({ name }: { name: string }) => {
-    const initials = name
-      ?.split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((n) => n[0]?.toUpperCase())
-      .join("") || "?";
-
+    const initials =
+      name?.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?";
     return (
       <div className="relative">
         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-semibold flex items-center justify-center shadow-sm">
@@ -166,6 +178,26 @@ export const AlunoList = ({
     );
   };
 
+  const InfoRow = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number;
+  }) => (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_1px_0_0_rgba(2,6,23,0.03)]">
+      <div className="mt-0.5 inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-600">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-wide text-slate-500">{label}</p>
+        <p className="text-sm font-medium text-slate-900 mt-0.5 break-words">{value || "—"}</p>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -182,6 +214,7 @@ export const AlunoList = ({
             onClick={() => fetchAlunos({ resetPage: true })}
             className="inline-flex items-center gap-2 text-xs sm:text-sm px-2.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition"
             aria-label="Atualizar lista"
+            title="Atualizar"
           >
             <RefreshCw size={16} />
             <span className="hidden sm:inline">Atualizar</span>
@@ -194,16 +227,15 @@ export const AlunoList = ({
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="relative overflow-hidden rounded-2xl border border-slate-100 p-4 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)]"
+                className="relative overflow-hidden rounded-2xl border border-slate-100 p-4 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] animate-pulse"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-50/80 to-transparent animate-[shimmer_1.2s_infinite]" />
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-slate-200" />
                   <div className="flex-1 space-y-2">
                     <div className="h-3.5 w-1/2 bg-slate-200 rounded" />
                     <div className="h-3 w-2/3 bg-slate-100 rounded" />
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-slate-100" />
+                  <div className="w-10 h-10 rounded-xl bg-slate-100" />
                 </div>
               </div>
             ))}
@@ -236,62 +268,69 @@ export const AlunoList = ({
           </div>
         )}
 
-        {/* Lista — cards estilizados */}
-        <div className="p-3 sm:p-4 grid grid-cols-1 gap-3">
-          {alunos.map((aluno) => (
-            <button
-              key={aluno.id}
-              onClick={() => openAlunoDetails(aluno)}
-              className="group relative text-left rounded-2xl border border-slate-200 bg-white shadow-[0_1px_0_0_rgba(2,6,23,0.04)] hover:shadow-[0_8px_24px_-12px_rgba(2,6,23,0.25)] transition-all overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-            >
-              {/* Borda lateral animada */}
-              <span className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-blue-500 to-indigo-500" />
-              <div className="px-4 sm:px-5 py-3.5 sm:py-4 flex items-center gap-4">
-                <Avatar name={aluno.nome} />
+        {/* ======= LISTA (hierarquia clara / nome sem truncar) ======= */}
+        {!initialLoading && !error && alunos.length > 0 && (
+          <div className="p-2 sm:p-4 space-y-2.5 sm:space-y-3">
+            {alunos.map((aluno) => (
+              <button
+                key={aluno.id}
+                onClick={() => openAlunoDetails(aluno)}
+                className="group w-full text-left rounded-2xl border border-slate-200 bg-white shadow-[0_1px_0_0_rgba(2,6,23,0.04)] hover:shadow-[0_8px_24px_-12px_rgba(2,6,23,0.25)] transition-all overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-[auto,1fr,auto] gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4 items-center">
+                  {/* Avatar */}
+                  <div className="sm:row-span-2">
+                    <Avatar name={aluno.nome} />
+                  </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-slate-900 font-semibold text-[15px] sm:text-base truncate">
+                  {/* Bloco textual */}
+                  <div className="min-w-0">
+                    {/* Nome (sem truncar) */}
+                    <p className="text-slate-900 font-semibold text-[15px] sm:text-base leading-snug whitespace-normal break-words">
                       {aluno.nome}
                     </p>
-                    {/* Nota como badge compacta */}
-                    <NotaBadge nota={aluno.nota} />
-                  </div>
 
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] sm:text-[13px] text-slate-600">
-                    <span className="inline-flex items-center gap-1">
+                    {/* ID discreto */}
+                    <p className="mt-0.5 text-[12px] sm:text-[13px] text-slate-500 flex items-center gap-1.5">
                       <IdCard size={14} className="text-slate-400" />
-                      ID: {aluno.id}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <School size={14} className="text-slate-400" />
-                      Escola: {aluno.escola?.nome || "N/A"}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <GraduationCap size={14} className="text-slate-400" />
-                      Turma: {aluno.turma?.nome || "N/A"}
-                    </span>
+                      ID: <span className="text-slate-600">{aluno.id}</span>
+                    </p>
+                  </div>
+
+                  {/* Ações (nota + câmera) */}
+                  <div className="sm:row-span-2 sm:self-stretch flex sm:flex-col items-center sm:items-end gap-2">
+                    <NotaBadge nota={aluno.nota} />
+                    <button
+                      onClick={(e) => handleCameraClick(aluno.id, e)}
+                      aria-label={`Abrir gabaritos do aluno ${aluno.nome}`}
+                      className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-blue-200 text-blue-700 bg-blue-50/40 hover:bg-blue-50 active:scale-[0.98] transition"
+                      title="Ir para gabaritos"
+                    >
+                      <Camera size={18} />
+                    </button>
+                  </div>
+
+                  {/* Escola e Turma */}
+                  <div className="sm:col-start-2 sm:col-end-2 -mt-1">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] sm:text-[13px] text-slate-700">
+                      <span className="inline-flex items-center gap-1.5">
+                        <School size={14} className="text-slate-400" />
+                        Escola: <span className="font-medium text-slate-900">{aluno.escola?.nome || "N/A"}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <GraduationCap size={14} className="text-slate-400" />
+                        Turma: <span className="font-medium text-slate-900">{aluno.turma?.nome || "N/A"}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Ação: câmera */}
-                <div className="shrink-0">
-                  <button
-                    onClick={(e) => handleCameraClick(aluno.id, e)}
-                    aria-label={`Abrir gabaritos do aluno ${aluno.nome}`}
-                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-blue-200 text-blue-700 bg-blue-50/40 hover:bg-blue-50 active:scale-[0.98] transition"
-                    title="Ir para gabaritos"
-                  >
-                    <Camera size={18} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Hover glow */}
-              <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-gradient-to-r from-blue-50/0 via-blue-50/40 to-indigo-50/0" />
-            </button>
-          ))}
-        </div>
+                {/* realce sutil no hover */}
+                <div className="pointer-events-none h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/15 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition" />
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Sentinela + loader */}
         <div ref={sentinelRef} />
@@ -300,7 +339,7 @@ export const AlunoList = ({
         )}
       </div>
 
-      {/* Modal bonito */}
+      {/* ======= MODAL ======= */}
       {isModalOpen && selectedAluno && (
         <div className="fixed inset-0 z-40">
           {/* Backdrop */}
@@ -313,13 +352,11 @@ export const AlunoList = ({
               <div className="relative px-5 sm:px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center font-semibold">
-                    {(selectedAluno.nome?.split(" ").map(n => n[0]).slice(0,2).join("") || "?").toUpperCase()}
+                    {(selectedAluno.nome?.split(" ").map((n) => n[0]).slice(0, 2).join("") || "?").toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <h3 className="text-lg sm:text-xl font-semibold truncate">{selectedAluno.nome}</h3>
-                    <p className="text-white/80 text-xs sm:text-[13px] truncate">
-                      ID {selectedAluno.id}
-                    </p>
+                    <p className="text-white/80 text-xs sm:text-[13px] truncate">ID {selectedAluno.id}</p>
                   </div>
                 </div>
 
@@ -364,33 +401,3 @@ export const AlunoList = ({
     </>
   );
 };
-
-/* --------- UI helpers --------- */
-
-const InfoRow = ({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-}) => (
-  <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_1px_0_0_rgba(2,6,23,0.03)]">
-    <div className="mt-0.5 inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-600">
-      {icon}
-    </div>
-    <div className="min-w-0">
-      <p className="text-[11px] uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="text-sm font-medium text-slate-900 mt-0.5 break-words">{value || "—"}</p>
-    </div>
-  </div>
-);
-
-/* Tailwind keyframes para shimmer (opcional) — adicione no tailwind.config se quiser persistente
-theme.extend.keyframes.shimmer = {
-  "0%,100%": { transform: "translateX(-100%)" },
-  "50%": { transform: "translateX(100%)" },
-};
-theme.extend.animation.shimmer = "shimmer 1.2s ease-in-out infinite";
-*/
