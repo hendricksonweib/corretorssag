@@ -119,7 +119,6 @@ export default function AlunosPage() {
                     <h2 className="text-lg font-semibold text-slate-900">Lista de Alunos</h2>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <span className="hidden sm:inline">Filtros ativos:</span>
                     {searchNome && (
                       <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs">
                         Nome: {searchNome}

@@ -9,6 +9,10 @@ import {
   Star,
   Search,
   Filter,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -44,6 +48,7 @@ export const AlunoList = ({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [perPage, setPerPage] = useState(10);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -55,26 +60,29 @@ export const AlunoList = ({
 
   const navigate = useNavigate();
   const abortRef = useRef<AbortController | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const modalCloseBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const filtersKey = useMemo(
     () => JSON.stringify({ searchNome, escolaId, turmaId }),
     [searchNome, escolaId, turmaId]
   );
 
-  const fetchAlunos = async (opts?: { append?: boolean; resetPage?: boolean }) => {
+  const fetchAlunos = async (opts?: { resetPage?: boolean }) => {
     setError(null);
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const isFirstPage = opts?.resetPage || page === 1;
-    if (isFirstPage) setInitialLoading(true);
+    const targetPage = opts?.resetPage ? 1 : page;
+    if (opts?.resetPage) setPage(1);
+    
     setLoading(true);
+    if (targetPage === 1) setInitialLoading(true);
 
     try {
-      const queryParams = new URLSearchParams({ page: String(opts?.resetPage ? 1 : page) });
+      const queryParams = new URLSearchParams({ 
+        page: String(targetPage),
+        limit: String(perPage)
+      });
       if (searchNome.trim() !== "") queryParams.append("nome", searchNome.trim());
       if (escolaId !== null) queryParams.append("escola_id", String(escolaId));
       if (turmaId !== null) queryParams.append("turma_id", String(turmaId));
@@ -90,7 +98,7 @@ export const AlunoList = ({
 
       setTotalPages(data.totalPages || 1);
       setTotalItems(data.total || 0);
-      setAlunos((prev) => (opts?.append ? [...prev, ...newAlunos] : newAlunos));
+      setAlunos(newAlunos);
     } catch (err: any) {
       if (err.name !== "AbortError") setError(err?.message || "Erro ao buscar alunos.");
     } finally {
@@ -101,13 +109,12 @@ export const AlunoList = ({
 
   // primeira carga / mudança de página
   useEffect(() => {
-    fetchAlunos({ append: page > 1 && !initialLoading });
+    fetchAlunos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, perPage]);
 
   // mudança de filtros
   useEffect(() => {
-    setPage(1);
     fetchAlunos({ resetPage: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey]);
@@ -120,23 +127,6 @@ export const AlunoList = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reload]);
 
-  // infinite scroll
-  useEffect(() => {
-    if (!sentinelRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        const canLoadMore = page < totalPages && !loading && !initialLoading && !error;
-        if (entry.isIntersecting && canLoadMore) {
-          setPage((p) => Math.min(p + 1, totalPages));
-        }
-      },
-      { root: null, rootMargin: "200px", threshold: 0 }
-    );
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [page, totalPages, loading, initialLoading, error]);
-
   // ações
   const handleCameraClick = (alunoId: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -146,12 +136,54 @@ export const AlunoList = ({
   const openAlunoDetails = (aluno: Aluno) => {
     setSelectedAluno(aluno);
     setIsModalOpen(true);
-    setTimeout(() => modalCloseBtnRef.current?.focus(), 0);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedAluno(null);
+  };
+
+  // Paginação
+  const goToPage = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
+    }
+  };
+
+  const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPerPage(Number(e.target.value));
+    setPage(1);
+  };
+
+  // Gerar array de páginas para exibição
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
+      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      if (startPage > 1) {
+        pages.push(1);
+        if (startPage > 2) pages.push('...');
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
   };
 
   // UI helpers
@@ -216,8 +248,8 @@ export const AlunoList = ({
   return (
     <>
       <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Header melhorado para desktop */}
-        <div className="sticky top-0 z-10 bg-white/85 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between">
+        {/* Header com controles de paginação */}
+        <div className="sticky top-0 z-10 bg-white/85 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <div className="text-[13px] sm:text-sm text-slate-600">
               <span className="hidden sm:inline">Página </span>
@@ -245,21 +277,43 @@ export const AlunoList = ({
             </div>
           </div>
           
-          <button
-            onClick={() => fetchAlunos({ resetPage: true })}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition"
-            aria-label="Atualizar lista"
-            title="Atualizar"
-          >
-            <RefreshCw size={16} />
-            <span className="hidden sm:inline">Atualizar</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Itens por página */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="perPage" className="text-xs text-slate-600 whitespace-nowrap">
+                Itens por página:
+              </label>
+              <select
+                id="perPage"
+                value={perPage}
+                onChange={handlePerPageChange}
+                className="text-xs px-2 py-1 rounded-md border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                disabled={loading}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+
+            <button
+              onClick={() => fetchAlunos({ resetPage: true })}
+              className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition disabled:opacity-50"
+              aria-label="Atualizar lista"
+              title="Atualizar"
+              disabled={loading}
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              <span className="hidden sm:inline">Atualizar</span>
+            </button>
+          </div>
         </div>
 
         {/* Estados */}
         {initialLoading && (
           <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: perPage }).map((_, i) => (
               <div
                 key={i}
                 className="relative overflow-hidden rounded-2xl border border-slate-100 p-4 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] animate-pulse"
@@ -303,7 +357,7 @@ export const AlunoList = ({
           </div>
         )}
 
-        {/* ======= LISTA (layout responsivo melhorado) ======= */}
+        {/* ======= LISTA ======= */}
         {!initialLoading && !error && alunos.length > 0 && (
           <div className="p-2 sm:p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {alunos.map((aluno) => (
@@ -366,12 +420,80 @@ export const AlunoList = ({
           </div>
         )}
 
-        {/* Sentinela + loader */}
-        <div ref={sentinelRef} />
-        {loading && !initialLoading && (
-          <div className="py-6 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
-            <RefreshCw size={16} className="animate-spin" />
-            <span>Carregando mais alunos...</span>
+        {/* Paginação */}
+        {!initialLoading && !error && totalPages > 1 && (
+          <div className="px-4 sm:px-6 py-4 border-t border-slate-200 bg-slate-50/50">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-slate-600">
+                Mostrando {alunos.length} de {totalItems} alunos
+              </div>
+              
+              <div className="flex items-center gap-1">
+                {/* Primeira página */}
+                <button
+                  onClick={() => goToPage(1)}
+                  disabled={page === 1 || loading}
+                  className="p-2 rounded-md border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  aria-label="Primeira página"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+
+                {/* Página anterior */}
+                <button
+                  onClick={() => goToPage(page - 1)}
+                  disabled={page === 1 || loading}
+                  className="p-2 rounded-md border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {/* Números de página */}
+                <div className="flex items-center gap-1 mx-2">
+                  {getPageNumbers().map((pageNum, index) =>
+                    pageNum === '...' ? (
+                      <span key={`ellipsis-${index}`} className="px-2 py-1 text-slate-400">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={pageNum}
+                        onClick={() => goToPage(pageNum as number)}
+                        disabled={loading}
+                        className={`min-w-[2rem] px-2 py-1 rounded-md border transition ${
+                          page === pageNum
+                            ? 'border-blue-500 bg-blue-500 text-white'
+                            : 'border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* Próxima página */}
+                <button
+                  onClick={() => goToPage(page + 1)}
+                  disabled={page === totalPages || loading}
+                  className="p-2 rounded-md border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  aria-label="Próxima página"
+                >
+                  <ChevronRight size={16} />
+                </button>
+
+                {/* Última página */}
+                <button
+                  onClick={() => goToPage(totalPages)}
+                  disabled={page === totalPages || loading}
+                  className="p-2 rounded-md border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  aria-label="Última página"
+                >
+                  <ChevronsRight size={16} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -398,7 +520,6 @@ export const AlunoList = ({
                 </div>
 
                 <button
-                  ref={modalCloseBtnRef}
                   onClick={closeModal}
                   className="absolute right-3 top-3 p-2 rounded-xl hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50"
                   aria-label="Fechar modal"
