@@ -7,11 +7,7 @@ export default function GabaritoPage() {
   return (
     <>
       <Header />
-      <div className="pt-20 p-6 bg-gray-100 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <CameraCapture apiUrl={apiUrl} />
-        </div>
-      </div>
     </>
   );
 }
