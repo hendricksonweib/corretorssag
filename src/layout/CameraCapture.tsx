@@ -21,8 +21,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
-  const [showModal, setShowModal] = useState(false);  // Modal control
-  const [modalContent, setModalContent] = useState<any>(null);
   const [isCadastrado, setIsCadastrado] = useState(true);
 
   const [gabarito, setGabarito] = useState<any>(null);  // Gabarito completo
@@ -51,13 +49,13 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const countRespostas = (gabarito: any) => {
     let gabaritoObj = gabarito;
-  if (typeof gabarito === "string") {
-    try {
-      gabaritoObj = JSON.parse(gabarito);
-    } catch {
-      gabaritoObj = {};
+    if (typeof gabarito === "string") {
+      try {
+        gabaritoObj = JSON.parse(gabarito);
+      } catch {
+        gabaritoObj = {};
+      }
     }
-  }
     const count = {
       a: 0,
       b: 0,
@@ -78,13 +76,13 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const renderGabarito = (gabarito: any) => {
     // Parse o gabarito se for uma string
     let gabaritoObj = gabarito;
-  if (typeof gabarito === "string") {
-    try {
-      gabaritoObj = JSON.parse(gabarito);
-    } catch {
-      gabaritoObj = {};
+    if (typeof gabarito === "string") {
+      try {
+        gabaritoObj = JSON.parse(gabarito);
+      } catch {
+        gabaritoObj = {};
+      }
     }
-  }
     
     console.log(gabaritoObj);  
     
@@ -199,12 +197,12 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       let rawJson = await response.json() as ApiRaw;
 
       if (typeof rawJson === "string") {
-      try {
-        rawJson = JSON.parse(rawJson);
-      } catch {
-        rawJson = {};
+        try {
+          rawJson = JSON.parse(rawJson);
+        } catch {
+          rawJson = {};
+        }
       }
-    }
 
       if (Object.keys(rawJson).length === 0) {
         throw new Error("Nenhum dado retornado da API.");
@@ -213,17 +211,54 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       setGabarito(rawJson);
       countRespostas(JSON.stringify(rawJson));
 
-      console.log(rawJson)
+      console.log(rawJson);
 
-      // Exibe o modal com os logs da resposta
-      setModalContent(rawJson);
-      setShowModal(true);
+      // Enviar diretamente para a API de desempenho
+      await enviarRespostasParaAPI(rawJson);
 
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
       setError(err?.message ? `Erro ao enviar: ${err.message}` : "Erro ao enviar os dados. Tente novamente.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const enviarRespostasParaAPI = async (respostas: any) => {
+    try {
+      const payload = [
+        {
+          resposta: respostas,
+          exam_id: selectedProva,
+          id: alunoId 
+        }
+      ];
+
+      const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": apiKey
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log("Payload enviado:", payload);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Resposta da API:', result);
+
+      alert("Respostas enviadas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao enviar as respostas:", error);
+      setError("Erro ao enviar as respostas para o servidor.");
     }
   };
 
@@ -245,52 +280,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleProvaChange = (id: string) => {
     setSelectedProva(id);
-  };
-
-  const handleModalClose = () => {
-    setShowModal(false);
-  };
-
-  const handleModalConfirm = async () => {
-    try {
-      
-      const payload = [
-        {
-          resposta: modalContent,
-          exam_id: selectedProva,
-          id: alunoId 
-        }
-      ];
-
-      const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-KEY": apiKey
-        },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("AQUIIIII ESTÁAAAAA O PAYLOAD")
-      console.log(payload)
-      alert("Payload: " + JSON.stringify(payload))
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('Resposta da API:', result);
-
-      alert("Respostas enviadas com sucesso!");
-    } catch (error) {
-      console.error("Erro ao enviar as respostas:", error);
-    } finally {
-      setShowModal(false);
-    }
   };
 
   return (
@@ -398,19 +387,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           onClick={handleSubmit}
           disabled={loading || !photo}
         />
-
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-lg">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Log de Resposta da API</h3>
-              <pre className="text-sm text-gray-700 whitespace-pre-wrap">{JSON.stringify(modalContent, null, 2)}</pre>
-              <div className="mt-4 flex justify-end gap-3">
-                <Button label="Corrigir" onClick={handleModalClose} />
-                <Button label="Confirmar" onClick={handleModalConfirm} />
-              </div>
-            </div>
-          </div>
-        )}
 
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
