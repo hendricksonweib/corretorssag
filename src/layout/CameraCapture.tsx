@@ -21,13 +21,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
-<<<<<<< HEAD
   const [showModal, setShowModal] = useState(false);  // Modal control
   const [modalContent, setModalContent] = useState<any>(null);
-=======
-  const [showModal, setShowModal] = useState(false); 
-  const [modalContent, setModalContent] = useState<string>("");
->>>>>>> 17be9703ae5b9c85c391890efec5db612c0de989
   const [isCadastrado, setIsCadastrado] = useState(true);
 
   const [gabarito, setGabarito] = useState<any>(null);  // Gabarito completo
@@ -220,12 +215,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       console.log(rawJson)
 
-<<<<<<< HEAD
       // Exibe o modal com os logs da resposta
       setModalContent(rawJson);
-=======
-      setModalContent(JSON.stringify(rawJson, null, 2));
->>>>>>> 17be9703ae5b9c85c391890efec5db612c0de989
       setShowModal(true);
 
     } catch (err: any) {
@@ -262,13 +253,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleModalConfirm = async () => {
     try {
-<<<<<<< HEAD
       
-=======
-      const respostasObj = JSON.parse(modalContent);
-
-      console.log(respostasObj)
->>>>>>> 17be9703ae5b9c85c391890efec5db612c0de989
       const payload = [
         {
           resposta: modalContent,
