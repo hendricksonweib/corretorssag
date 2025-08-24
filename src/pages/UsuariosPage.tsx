@@ -4,7 +4,6 @@ import { Header } from "../components/Header";
 import { PageHeader } from "../ui/PageHeader";
 import { CreateUserModal } from "../components/modals/CreateUserModal";
 import { Plus } from "lucide-react";
-
 export const UsuariosPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [reloadList, setReloadList] = useState(false);
