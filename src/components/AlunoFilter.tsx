@@ -76,7 +76,6 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
           Buscar Alunos
         </h2>
 
-        {/* Ações (desktop/tablet). No mobile ficam ao final do formulário */}
         <div className="hidden sm:flex gap-2">
           <button
             onClick={handleClear}
@@ -105,7 +104,6 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
           auto-rows-fr
         "
       >
-        {/* Campo de busca */}
         <div className="relative">
           <label htmlFor="busca-aluno" className="sr-only">
             Nome do aluno
@@ -130,7 +128,6 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
           />
         </div>
 
-        {/* Seleção de escola */}
         <div>
           <label htmlFor="select-escola" className="sr-only">
             Escola
@@ -155,7 +152,6 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
           </select>
         </div>
 
-        {/* Seleção de turma */}
         <div>
           <label htmlFor="select-turma" className="sr-only">
             Turma
@@ -184,7 +180,6 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
           </select>
         </div>
 
-        {/* Botões principais (mobile-first) */}
         <div className="flex gap-2 sm:hidden">
           <button
             type="button"
@@ -201,7 +196,6 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
           </button>
         </div>
 
-        {/* Em telas >= sm, ações ficam no header; aqui mantemos o Filtrar alinhado no grid */}
         <div className="hidden sm:flex items-stretch gap-2">
           <button
             type="submit"
