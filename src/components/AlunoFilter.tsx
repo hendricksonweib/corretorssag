@@ -12,7 +12,7 @@ interface Turma {
 
 interface AlunoFilterProps {
   onFilter: (nome: string, escolaId: number | null, turmaId: number | null) => void;
-  onOpenCreateAlunoModal: () => void; // Função para abrir o modal de criação de aluno
+  onOpenCreateAlunoModal: () => void;
 }
 
 export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterProps) => {
@@ -32,7 +32,6 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
         console.error("Erro ao carregar as escolas:", error);
       }
     };
-
     fetchEscolas();
   }, []);
 
@@ -42,22 +41,20 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
       setTurmaId("");
       return;
     }
-
- const fetchTurmas = async () => {
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${escolaId}`);
-    const data = await res.json();
-    setTurmas(Array.isArray(data.data) ? data.data : []);
-  } catch (error) {
-    console.error("Erro ao carregar as turmas:", error);
-  }
-};
-
-
+    const fetchTurmas = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/turmas?escola_id=${escolaId}`);
+        const data = await res.json();
+        setTurmas(Array.isArray(data.data) ? data.data : []);
+      } catch (error) {
+        console.error("Erro ao carregar as turmas:", error);
+      }
+    };
     fetchTurmas();
   }, [escolaId]);
 
-  const handleFilter = () => {
+  const handleFilter = (e?: React.FormEvent) => {
+    e?.preventDefault();
     onFilter(
       nome.trim(),
       escolaId !== "" ? escolaId : null,
@@ -65,64 +62,162 @@ export const AlunoFilter = ({ onFilter, onOpenCreateAlunoModal }: AlunoFilterPro
     );
   };
 
+  const handleClear = () => {
+    setNome("");
+    setEscolaId("");
+    setTurmaId("");
+    onFilter("", null, null);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-6">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">Buscar Alunos</h2>
-      <div className="flex flex-wrap gap-3 items-end">
-        <div className="flex items-center w-full md:w-1/2 relative">
-          <span className="absolute left-3 text-gray-400">
+    <section className="bg-white/80 backdrop-blur rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 md:p-6 mb-6">
+      <header className="flex items-center justify-between mb-3">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-800">
+          Buscar Alunos
+        </h2>
+
+        {/* Ações (desktop/tablet). No mobile ficam ao final do formulário */}
+        <div className="hidden sm:flex gap-2">
+          <button
+            onClick={handleClear}
+            type="button"
+            className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+          >
+            Limpar
+          </button>
+          <button
+            onClick={onOpenCreateAlunoModal}
+            type="button"
+            className="px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
+          >
+            Criar Aluno
+          </button>
+        </div>
+      </header>
+
+      <form
+        onSubmit={handleFilter}
+        className="
+          grid gap-3
+          grid-cols-1
+          sm:grid-cols-2
+          lg:grid-cols-4
+          auto-rows-fr
+        "
+      >
+        {/* Campo de busca */}
+        <div className="relative">
+          <label htmlFor="busca-aluno" className="sr-only">
+            Nome do aluno
+          </label>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
             <i className="fas fa-search" />
           </span>
           <input
+            id="busca-aluno"
             type="text"
             placeholder="Digite o nome do aluno..."
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="
+              w-full pl-10 pr-3 py-2.5
+              rounded-lg border border-gray-300
+              text-gray-800 placeholder:text-gray-400
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+            "
             value={nome}
             onChange={(e) => setNome(e.target.value)}
+            inputMode="text"
+            autoComplete="off"
           />
         </div>
 
-        <select
-          className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={escolaId}
-          onChange={(e) => setEscolaId(e.target.value === "" ? "" : parseInt(e.target.value))}
-        >
-          <option value="">Todas as escolas</option>
-          {escolas.map((escola) => (
-            <option key={escola.id} value={escola.id}>
-              {escola.nome}
+        {/* Seleção de escola */}
+        <div>
+          <label htmlFor="select-escola" className="sr-only">
+            Escola
+          </label>
+          <select
+            id="select-escola"
+            className="
+              w-full px-3 py-2.5
+              rounded-lg border border-gray-300 bg-white
+              text-gray-800
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+            "
+            value={escolaId}
+            onChange={(e) => setEscolaId(e.target.value === "" ? "" : parseInt(e.target.value))}
+          >
+            <option value="">Todas as escolas</option>
+            {escolas.map((escola) => (
+              <option key={escola.id} value={escola.id}>
+                {escola.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Seleção de turma */}
+        <div>
+          <label htmlFor="select-turma" className="sr-only">
+            Turma
+          </label>
+          <select
+            id="select-turma"
+            className="
+              w-full px-3 py-2.5
+              rounded-lg border border-gray-300 bg-white
+              text-gray-800
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              disabled:opacity-60 disabled:cursor-not-allowed
+            "
+            value={turmaId}
+            disabled={escolaId === "" || turmas.length === 0}
+            onChange={(e) => setTurmaId(e.target.value === "" ? "" : parseInt(e.target.value))}
+          >
+            <option value="">
+              {escolaId === "" ? "Escolha uma escola" : "Todas as turmas"}
             </option>
-          ))}
-        </select>
+            {turmas.map((turma) => (
+              <option key={turma.id} value={turma.id}>
+                {turma.nome}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={turmaId}
-          onChange={(e) => setTurmaId(e.target.value === "" ? "" : parseInt(e.target.value))}
-        >
-          <option value="">Todas as turmas</option>
-          {turmas.map((turma) => (
-            <option key={turma.id} value={turma.id}>
-              {turma.nome}
-            </option>
-          ))}
-        </select>
+        {/* Botões principais (mobile-first) */}
+        <div className="flex gap-2 sm:hidden">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+          >
+            Limpar
+          </button>
+          <button
+            type="submit"
+            className="flex-1 px-3 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+          >
+            Filtrar
+          </button>
+        </div>
 
-        <button
-          onClick={handleFilter}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          Filtrar
-        </button>
-
-        {/* Botão para abrir o modal de criação de aluno */}
-        <button
-          onClick={onOpenCreateAlunoModal}
-          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition ml-4"
-        >
-          Criar Aluno
-        </button>
-      </div>
-    </div>
+        {/* Em telas >= sm, ações ficam no header; aqui mantemos o Filtrar alinhado no grid */}
+        <div className="hidden sm:flex items-stretch gap-2">
+          <button
+            type="submit"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+          >
+            Filtrar
+          </button>
+          <button
+            type="button"
+            onClick={onOpenCreateAlunoModal}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
+          >
+            Criar Aluno
+          </button>
+        </div>
+      </form>
+    </section>
   );
 };
