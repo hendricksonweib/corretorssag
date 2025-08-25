@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Webcam from "react-webcam";
 import { Button } from "../components/Button";
 import { SelectProvas } from "../components/selects/SelectProvas";
-import { useLocation } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 interface CameraCaptureProps {
   apiUrl: string;
@@ -18,12 +18,14 @@ interface ApiResponse {
 }
 
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
-  const location = useLocation();
-  const alunoId = location.state?.alunoId ?? null;
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const alunoId = searchParams.get('alunoId');
   const [photo, setPhoto] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
@@ -52,6 +54,13 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       { width: 1280, height: 720 },
     ],
   };
+
+  // Verificar se alunoId existe
+  useEffect(() => {
+    if (!alunoId) {
+      setError("Nenhum aluno selecionado. Volte e selecione um aluno primeiro.");
+    }
+  }, [alunoId]);
 
   const countRespostas = (gabarito: any) => {
     let gabaritoObj = gabarito;
@@ -89,25 +98,25 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       }
     }
     
-    console.log(gabaritoObj);  
-    
     return (
-      <table className="min-w-full table-auto">
-        <thead>
-          <tr>
-            <th className="border px-4 py-2">Questão</th>
-            <th className="border px-4 py-2">Resposta</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.keys(gabaritoObj).map((key) => (
-            <tr key={key}>
-              <td className="border px-4 py-2">{key}</td>
-              <td className="border px-4 py-2">{gabaritoObj[key]}</td>
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border-collapse">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border px-4 py-2 text-left">Questão</th>
+              <th className="border px-4 py-2 text-left">Resposta</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {Object.keys(gabaritoObj).map((key) => (
+              <tr key={key}>
+                <td className="border px-4 py-2">{key}</td>
+                <td className="border px-4 py-2 font-medium">{gabaritoObj[key]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
@@ -117,7 +126,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         const video = webcamRef.current.video as HTMLVideoElement;
         setCameraResolution(`${video.videoWidth}x${video.videoHeight}`);
         setCameraReady(true);
-        console.log("📷 Resolução da câmera:", `${video.videoWidth}x${video.videoHeight}`);
       }
     };
 
@@ -141,17 +149,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     if (!ctx) return;
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
     const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
-
-    console.log("📸 Foto capturada:", {
-      width: canvas.width,
-      height: canvas.height,
-      size: highQualityPhoto.length,
-    });
 
     setPhoto(highQualityPhoto);
     setError(null);
+    setSuccess(null);
     setShowEnviarButton(false);
     setGabarito(null);
   };
@@ -172,25 +174,25 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       return;
     }
 
+    if (!alunoId) {
+      setError("Aluno ID não encontrado.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const blob = await fetch(photo).then((res) => res.blob());
-
       const formData = new FormData();
-      formData.append("imagem", blob, "high_quality_photo.png");
+      formData.append("imagem", blob, "gabarito.png");
       formData.append("numero_questoes", questionCount);
       formData.append("prova_id", selectedProva);
 
       if (!isCadastrado) {
         formData.append("not_cadast", "1");
       }
-
-      console.log("📤 Enviando imagem:", {
-        size: blob.size,
-        type: blob.type,
-      });
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -207,7 +209,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         try {
           rawJson = JSON.parse(rawJson);
         } catch {
-          rawJson = {};
+          throw new Error("Formato de resposta inválido da API");
         }
       }
 
@@ -216,36 +218,38 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       }
 
       setGabarito(rawJson);
-      countRespostas(JSON.stringify(rawJson));
+      countRespostas(rawJson);
       setShowEnviarButton(true);
-
-      console.log(rawJson);
+      setSuccess("Gabarito processado com sucesso!");
 
     } catch (err: any) {
-      console.error("❌ Erro no envio:", err);
-      setError(err?.message ? `Erro ao processar: ${err.message}` : "Erro ao processar o gabarito. Tente novamente.");
+      console.error("Erro no processamento:", err);
+      setError(err?.message || "Erro ao processar o gabarito. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleEnviarRespostas = async () => {
-    if (!gabarito) return;
+    if (!gabarito || !alunoId) {
+      setError("Dados incompletos para envio.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const payload = [
         {
           resposta: gabarito,
           exam_id: selectedProva,
-          id: alunoId 
+          id: parseInt(alunoId)
         }
       ];
 
       const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
         method: "POST",
         headers: {
@@ -255,39 +259,41 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         body: JSON.stringify(payload),
       });
 
-      console.log("Payload enviado:", payload);
-
       const result: ApiResponse = await response.json();
-      console.log('Resposta da API:', result);
 
-      if (result.codigo_http !== 200) {
-        let errorMessage = "Erro ao enviar respostas para o servidor.";
+      // Verifica se foi bem-sucedido
+      if (result.codigo_http === 200 || result.status === "success") {
+        setSuccess("Respostas enviadas com sucesso!");
+        setShowEnviarButton(false);
+        
+        // Limpar após sucesso
+        setTimeout(() => {
+          setPhoto(null);
+          setGabarito(null);
+          setQuestionCount("");
+        }, 2000);
+        
+      } else {
+        // Tratar erro específico da API
+        let errorMessage = "Erro ao enviar respostas.";
         
         if (result.mensagem) {
           errorMessage = result.mensagem;
         } else if (result.resposta_api) {
           try {
             const respostaDetalhada = JSON.parse(result.resposta_api);
-            if (respostaDetalhada.message) {
-              errorMessage = respostaDetalhada.message;
-            }
-            if (respostaDetalhada.resultados && respostaDetalhada.resultados.length > 0) {
-              errorMessage = respostaDetalhada.resultados[0].erro || errorMessage;
-            }
-          } catch (e) {
-            console.error("Erro ao parsear resposta da API:", e);
+            errorMessage = respostaDetalhada.message || errorMessage;
+          } catch {
+            errorMessage = "Erro no servidor. Tente novamente.";
           }
         }
         
         throw new Error(errorMessage);
       }
 
-      setError("Respostas enviadas com sucesso!");
-      setShowEnviarButton(false);
-
     } catch (error: any) {
-      console.error("Erro ao enviar as respostas:", error);
-      setError(error.message || "Erro ao enviar as respostas para o servidor.");
+      console.error("Erro ao enviar respostas:", error);
+      setError(error.message || "Erro ao enviar as respostas.");
     } finally {
       setLoading(false);
     }
@@ -302,10 +308,8 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleQuestionCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    if (/^\d{0,2}$/.test(inputValue)) {
-      if (Number(inputValue) <= 60) {
-        setQuestionCount(inputValue);
-      }
+    if (/^\d{0,2}$/.test(inputValue) && Number(inputValue) <= 60) {
+      setQuestionCount(inputValue);
     }
   };
 
@@ -313,18 +317,39 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setSelectedProva(id);
   };
 
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  // Limpar mensagens após 5 segundos
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(clearMessages, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
+
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-gray-100">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-lg sm:max-w-md p-4 flex-1">
+    <div className="flex flex-col items-center min-h-screen p-4 bg-gray-100">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-lg p-4">
         <h2 className="text-xl font-semibold text-blue-600 text-center mb-4">
           Capture o Gabarito
         </h2>
+
+        {alunoId && (
+          <div className="text-center mb-4">
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+              Aluno ID: {alunoId}
+            </span>
+          </div>
+        )}
 
         <div className="w-full mb-4">
           <SelectProvas value={selectedProva} onChange={handleProvaChange} />
         </div>
 
-        <div className="w-full mb-4 relative">
+        <div className="w-full mb-4 relative rounded-lg overflow-hidden">
           <Webcam
             audio={false}
             ref={webcamRef}
@@ -336,97 +361,122 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
             }}
           />
           {!cameraReady && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <p className="text-white">Carregando câmera...</p>
             </div>
           )}
         </div>
 
-        <div className="text-sm text-gray-500 mt-2">
-          Resolução da câmera: {cameraResolution}
+        <div className="text-sm text-gray-500 mb-4 text-center">
+          Resolução: {cameraResolution || "Não detectada"}
         </div>
 
-        <div className="flex flex-col gap-3 mb-4">
-          <Button label="Capturar Foto" onClick={handleCapture} disabled={loading || !cameraReady} />
-          <Button label="Recarregar Câmera" onClick={retryCamera} />
+        <div className="flex flex-col gap-2 mb-4">
+          <Button 
+            label="Capturar Foto" 
+            onClick={handleCapture} 
+            disabled={loading || !cameraReady} 
+          />
+          <Button 
+            label="Recarregar Câmera" 
+            onClick={retryCamera}
+          />
         </div>
 
         {photo && (
-          <div className="mt-4 mb-4 text-center">
+          <div className="mb-4 text-center">
             <h3 className="text-sm text-gray-500 mb-2">Pré-visualização:</h3>
             <img
               src={photo}
-              alt="Captured HD"
-              className="w-48 h-48 object-contain rounded-lg mx-auto border"
+              alt="Foto capturada"
+              className="w-32 h-32 object-contain rounded-lg mx-auto border"
             />
           </div>
         )}
 
-        <div className="w-full mb-4">
-          <label className="flex items-center">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={isCadastrado}
+                onChange={(e) => setIsCadastrado(e.target.checked)}
+                className="mr-2"
+              />
+              <span className="text-sm">Aluno cadastrado</span>
+            </label>
+          </div>
+          
+          <div>
+            <label htmlFor="questionCount" className="block text-sm mb-1">
+              Nº de Questões:
+            </label>
             <input
-              type="checkbox"
-              checked={isCadastrado}
-              onChange={(e) => setIsCadastrado(e.target.checked)}
-              className="mr-2"
+              id="questionCount"
+              type="number"
+              min="1"
+              max="60"
+              value={questionCount}
+              onChange={handleQuestionCountChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              placeholder="Ex: 60"
             />
-            <span className="text-sm text-gray-700">Aluno é cadastrado</span>
-          </label>
+          </div>
         </div>
 
-        <div className="w-full mb-4">
-          <label htmlFor="questionCount" className="block text-sm text-gray-700 mb-2">
-            Número de Questões:
-          </label>
-          <input
-            id="questionCount"
-            type="text"
-            value={questionCount}
-            onChange={handleQuestionCountChange}
-            inputMode="numeric"
-            pattern="[0-9]*"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            placeholder="Ex: 60"
-          />
-        </div>
+        {/* Mensagens de status */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
+            <p className="text-red-600 text-center text-sm">❌ {error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-4">
+            <p className="text-green-600 text-center text-sm">✅ {success}</p>
+          </div>
+        )}
 
         {gabarito && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Gabarito Processado:</h3>
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Gabarito Processado:</h3>
             {renderGabarito(gabarito)}
-            <div className="mt-4">
-              <p className="text-sm">Total de Respostas:</p>
-              <ul className="list-disc pl-5">
-                <li>Resposta A: {respostasCount.a}</li>
-                <li>Resposta B: {respostasCount.b}</li>
-                <li>Resposta C: {respostasCount.c}</li>
-                <li>Resposta D: {respostasCount.d}</li>
-                <li>Resposta Nula: {respostasCount.nula}</li>
-              </ul>
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-medium mb-2">Resumo:</h4>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <span>A: {respostasCount.a}</span>
+                <span>B: {respostasCount.b}</span>
+                <span>C: {respostasCount.c}</span>
+                <span>D: {respostasCount.d}</span>
+                <span>Nula: {respostasCount.nula}</span>
+              </div>
             </div>
           </div>
         )}
 
-        {error && (
-          <div className={`p-3 mb-4 rounded-lg ${error.includes("sucesso") ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-            <p className={`text-center ${error.includes("sucesso") ? "text-green-600" : "text-red-600"}`}>{error}</p>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <Button
-            label={loading ? "⏳ Processando..." : "Processar Gabarito"}
+            label={loading ? "Processando..." : "Processar Gabarito"}
             onClick={handleProcessarGabarito}
             disabled={loading || !photo}
           />
 
           {showEnviarButton && (
             <Button
-              label={loading ? "⏳ Enviando..." : "Enviar Respostas"}
+              label={loading ? "Enviando..." : "Enviar Respostas"}
               onClick={handleEnviarRespostas}
               disabled={loading}
             />
           )}
+        </div>
+
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => navigate('/alunos')}
+            className="text-blue-600 text-sm hover:underline"
+          >
+            ← Voltar para lista de alunos
+          </button>
         </div>
 
         <canvas ref={canvasRef} style={{ display: "none" }} />

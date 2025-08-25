@@ -130,7 +130,7 @@ export const AlunoList = ({
   // ações
   const handleCameraClick = (alunoId: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    navigate("/gabaritos", { state: { alunoId } });
+    navigate(`/gabaritos?alunoId=${alunoId}`);
   };
 
   const openAlunoDetails = (aluno: Aluno) => {
