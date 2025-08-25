@@ -8,12 +8,18 @@ interface CameraCaptureProps {
   apiUrl: string;
 }
 
-type ApiRaw = Record<string, any>; 
+type ApiRaw = Record<string, any>;
+
+interface ApiResponse {
+  status: string;
+  mensagem?: string;
+  codigo_http?: number;
+  resposta_api?: string;
+}
 
 const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
-  // AQUI: Pegando o alunoId da navegação
   const location = useLocation();
-  const alunoId = location.state?.alunoId ?? null; 
+  const alunoId = location.state?.alunoId ?? null;
   const [photo, setPhoto] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -22,8 +28,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   const [cameraResolution, setCameraResolution] = useState("");
   const [selectedProva, setSelectedProva] = useState<string>("");
   const [isCadastrado, setIsCadastrado] = useState(true);
-
-  const [gabarito, setGabarito] = useState<any>(null);  // Gabarito completo
+  const [gabarito, setGabarito] = useState<any>(null);
   const [respostasCount, setRespostasCount] = useState<any>({
     a: 0,
     b: 0,
@@ -31,6 +36,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     d: 0,
     nula: 0,
   });
+  const [showEnviarButton, setShowEnviarButton] = useState(false);
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -74,7 +80,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
   };
 
   const renderGabarito = (gabarito: any) => {
-    // Parse o gabarito se for uma string
     let gabaritoObj = gabarito;
     if (typeof gabarito === "string") {
       try {
@@ -137,7 +142,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const highQualityPhoto = canvas.toDataURL("image/png", 1.0); 
+    const highQualityPhoto = canvas.toDataURL("image/png", 1.0);
 
     console.log("📸 Foto capturada:", {
       width: canvas.width,
@@ -147,9 +152,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
     setPhoto(highQualityPhoto);
     setError(null);
+    setShowEnviarButton(false);
+    setGabarito(null);
   };
 
-  const handleSubmit = async () => {
+  const handleProcessarGabarito = async () => {
     if (!photo) {
       setError("Por favor, tire uma foto primeiro.");
       return;
@@ -210,25 +217,28 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       setGabarito(rawJson);
       countRespostas(JSON.stringify(rawJson));
+      setShowEnviarButton(true);
 
       console.log(rawJson);
 
-      // Enviar diretamente para a API de desempenho
-      await enviarRespostasParaAPI(rawJson);
-
     } catch (err: any) {
       console.error("❌ Erro no envio:", err);
-      setError(err?.message ? `Erro ao enviar: ${err.message}` : "Erro ao enviar os dados. Tente novamente.");
+      setError(err?.message ? `Erro ao processar: ${err.message}` : "Erro ao processar o gabarito. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  const enviarRespostasParaAPI = async (respostas: any) => {
+  const handleEnviarRespostas = async () => {
+    if (!gabarito) return;
+
+    setLoading(true);
+    setError(null);
+
     try {
       const payload = [
         {
-          resposta: respostas,
+          resposta: gabarito,
           exam_id: selectedProva,
           id: alunoId 
         }
@@ -247,18 +257,39 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
       console.log("Payload enviado:", payload);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
+      const result: ApiResponse = await response.json();
       console.log('Resposta da API:', result);
 
-      alert("Respostas enviadas com sucesso!");
-    } catch (error) {
+      if (result.codigo_http !== 200) {
+        let errorMessage = "Erro ao enviar respostas para o servidor.";
+        
+        if (result.mensagem) {
+          errorMessage = result.mensagem;
+        } else if (result.resposta_api) {
+          try {
+            const respostaDetalhada = JSON.parse(result.resposta_api);
+            if (respostaDetalhada.message) {
+              errorMessage = respostaDetalhada.message;
+            }
+            if (respostaDetalhada.resultados && respostaDetalhada.resultados.length > 0) {
+              errorMessage = respostaDetalhada.resultados[0].erro || errorMessage;
+            }
+          } catch (e) {
+            console.error("Erro ao parsear resposta da API:", e);
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      setError("Respostas enviadas com sucesso!");
+      setShowEnviarButton(false);
+
+    } catch (error: any) {
       console.error("Erro ao enviar as respostas:", error);
-      setError("Erro ao enviar as respostas para o servidor.");
+      setError(error.message || "Erro ao enviar as respostas para o servidor.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -331,23 +362,6 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </div>
         )}
 
-        {gabarito && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800">Gabarito:</h3>
-            {renderGabarito(gabarito)}
-            <div className="mt-4">
-              <p className="text-sm">Total de Respostas:</p>
-              <ul className="list-disc pl-5">
-                <li>Resposta A: {respostasCount.a}</li>
-                <li>Resposta B: {respostasCount.b}</li>
-                <li>Resposta C: {respostasCount.c}</li>
-                <li>Resposta D: {respostasCount.d}</li>
-                <li>Resposta Nula: {respostasCount.nula}</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
         <div className="w-full mb-4">
           <label className="flex items-center">
             <input
@@ -376,17 +390,44 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           />
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-red-600 text-center">{error}</p>
+        {gabarito && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-800">Gabarito Processado:</h3>
+            {renderGabarito(gabarito)}
+            <div className="mt-4">
+              <p className="text-sm">Total de Respostas:</p>
+              <ul className="list-disc pl-5">
+                <li>Resposta A: {respostasCount.a}</li>
+                <li>Resposta B: {respostasCount.b}</li>
+                <li>Resposta C: {respostasCount.c}</li>
+                <li>Resposta D: {respostasCount.d}</li>
+                <li>Resposta Nula: {respostasCount.nula}</li>
+              </ul>
+            </div>
           </div>
         )}
 
-        <Button
-          label={loading ? "⏳ Enviando..." : "Enviar Foto"}
-          onClick={handleSubmit}
-          disabled={loading || !photo}
-        />
+        {error && (
+          <div className={`p-3 mb-4 rounded-lg ${error.includes("sucesso") ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+            <p className={`text-center ${error.includes("sucesso") ? "text-green-600" : "text-red-600"}`}>{error}</p>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          <Button
+            label={loading ? "⏳ Processando..." : "Processar Gabarito"}
+            onClick={handleProcessarGabarito}
+            disabled={loading || !photo}
+          />
+
+          {showEnviarButton && (
+            <Button
+              label={loading ? "⏳ Enviando..." : "Enviar Respostas"}
+              onClick={handleEnviarRespostas}
+              disabled={loading}
+            />
+          )}
+        </div>
 
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </div>
