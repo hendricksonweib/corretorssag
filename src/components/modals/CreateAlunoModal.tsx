@@ -78,40 +78,55 @@ export const CreateAlunoModal = ({ alunoId, onClose, onSuccess }: CreateAlunoMod
     }
   }, [alunoId]);
 
-  const handleSubmit = async () => {
-    if (!nome.trim() || escolaId === "" || turmaId === "") {
-      alert("Preencha todos os campos.");
-      return;
-    }
+ const handleSubmit = async () => {
+  if (!nome.trim() || escolaId === "" || turmaId === "") {
+    alert("Preencha todos os campos.");
+    return;
+  }
 
-    setLoading(true);
-    const payload = {
-      nome,
-      escola_id: Number(escolaId),
-      turma_id: Number(turmaId),
-    };
-
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/alunos${alunoId ? `/${alunoId}` : ""}`,
-        {
-          method: alunoId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) throw new Error("Erro ao salvar aluno");
-
-      // Chama onSuccess e redireciona para /gabaritos
-      onSuccess();
-      navigate("/gabaritos");  // Redireciona para a página /gabaritos
-    } catch (err) {
-      alert("Erro ao salvar aluno");
-    } finally {
-      setLoading(false);
-    }
+  setLoading(true);
+  const payload = {
+    nome,
+    escola_id: Number(escolaId),
+    turma_id: Number(turmaId),
   };
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/alunos${alunoId ? `/${alunoId}` : ""}`,
+      {
+        method: alunoId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!res.ok) throw new Error("Erro ao salvar aluno");
+
+    // Se for criação de novo aluno, extrai o ID da resposta
+    if (!alunoId) {
+      const responseData = await res.json();
+      const createdAlunoId = responseData.id || responseData.data?.id;
+      
+      if (!createdAlunoId) {
+        throw new Error("ID do aluno não retornado na resposta");
+      }
+
+      // Chama onSuccess e redireciona para /gabaritos com o alunoId
+      onSuccess();
+      navigate(`/gabaritos?alunoId=${createdAlunoId}`);
+    } else {
+      // Se for edição, apenas fecha o modal
+      onSuccess();
+      onClose();
+    }
+
+  } catch (err: any) {
+    alert(err.message || "Erro ao salvar aluno");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
