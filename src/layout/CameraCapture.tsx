@@ -232,7 +232,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
 
   const handleEnviarRespostas = async () => {
     if (!gabarito || !alunoId) {
-      setError("Dados incompletos para envio.");
+      setError("Dados incompletos para envio. Verifique se o gabarito foi processado e o aluno está selecionado.");
       return;
     }
 
@@ -249,8 +249,14 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         }
       ];
 
+      console.log("📤 Enviando payload:", payload);
+
       const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`, {
+      const apiUrl = `${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`;
+      
+      console.log("🔗 URL da API:", apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -259,11 +265,21 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         body: JSON.stringify(payload),
       });
 
-      const result: ApiResponse = await response.json();
+      console.log("📨 Status da resposta:", response.status);
+      console.log("📨 Status text:", response.statusText);
 
-      // Verifica se foi bem-sucedido
-      if (result.codigo_http === 200 || result.status === "success") {
-        setSuccess("Respostas enviadas com sucesso!");
+      const result: ApiResponse = await response.json();
+      console.log('📨 Resposta completa da API:', result);
+
+      // Verifica se foi bem-sucedido - várias formas possíveis
+      const isSuccess = 
+        result.codigo_http === 200 || 
+        result.status === "success" || 
+        response.status === 200 ||
+        (result.resposta_api && typeof result.resposta_api === 'string' && result.resposta_api.includes('sucesso'));
+
+      if (isSuccess) {
+        setSuccess("✅ Respostas enviadas com sucesso!");
         setShowEnviarButton(false);
         
         // Limpar após sucesso
@@ -271,29 +287,50 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           setPhoto(null);
           setGabarito(null);
           setQuestionCount("");
-        }, 2000);
+          setSuccess(null);
+        }, 3000);
         
       } else {
         // Tratar erro específico da API
-        let errorMessage = "Erro ao enviar respostas.";
+        let errorMessage = "Erro ao enviar respostas para o servidor.";
         
+        // Tenta extrair mensagem de erro de diferentes formatos
         if (result.mensagem) {
           errorMessage = result.mensagem;
         } else if (result.resposta_api) {
           try {
-            const respostaDetalhada = JSON.parse(result.resposta_api);
-            errorMessage = respostaDetalhada.message || errorMessage;
-          } catch {
-            errorMessage = "Erro no servidor. Tente novamente.";
+            if (typeof result.resposta_api === 'string') {
+              const respostaDetalhada = JSON.parse(result.resposta_api);
+              errorMessage = respostaDetalhada.message || 
+                            respostaDetalhada.erro || 
+                            respostaDetalhada.error ||
+                            errorMessage;
+            }
+          } catch (parseError) {
+            // Se não for JSON, usa a string diretamente
+            errorMessage = result.resposta_api;
           }
+        } else if (result.status) {
+          errorMessage = `Status: ${result.status}`;
         }
         
         throw new Error(errorMessage);
       }
 
     } catch (error: any) {
-      console.error("Erro ao enviar respostas:", error);
-      setError(error.message || "Erro ao enviar as respostas.");
+      console.error("❌ Erro detalhado ao enviar respostas:", error);
+      
+      let errorMessage = "Erro ao enviar as respostas. ";
+      
+      if (error.message) {
+        errorMessage += error.message;
+      } else if (error.name === "TypeError") {
+        errorMessage += "Problema de conexão com o servidor. Verifique sua internet.";
+      } else {
+        errorMessage += "Tente novamente ou contate o suporte.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
