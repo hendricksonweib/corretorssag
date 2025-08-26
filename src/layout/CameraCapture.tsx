@@ -39,6 +39,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     nula: 0,
   });
   const [showEnviarButton, setShowEnviarButton] = useState(false);
+  const [showProcessarButton, setShowProcessarButton] = useState(false);
 
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -155,6 +156,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
     setError(null);
     setSuccess(null);
     setShowEnviarButton(false);
+    setShowProcessarButton(true);
     setGabarito(null);
   };
 
@@ -249,12 +251,12 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         }
       ];
 
-      console.log("📤 Enviando payload:", payload);
+      console.log("Enviando payload:", payload);
 
       const apiKey = `${import.meta.env.VITE_API_TOLKEN}`;
       const apiUrl = `${import.meta.env.VITE_API_URL}/api/desempenho-alunos/respostas`;
       
-      console.log("🔗 URL da API:", apiUrl);
+      console.log("URL da API:", apiUrl);
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -265,11 +267,11 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         body: JSON.stringify(payload),
       });
 
-      console.log("📨 Status da resposta:", response.status);
-      console.log("📨 Status text:", response.statusText);
+      console.log("Status da resposta:", response.status);
+      console.log("Status text:", response.statusText);
 
       const result: ApiResponse = await response.json();
-      console.log('📨 Resposta completa da API:', result);
+      console.log('Resposta completa da API:', result);
 
       // Verifica se foi bem-sucedido - várias formas possíveis
       const isSuccess = 
@@ -279,7 +281,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
         (result.resposta_api && typeof result.resposta_api === 'string' && result.resposta_api.includes('sucesso'));
 
       if (isSuccess) {
-        setSuccess("✅ Respostas enviadas com sucesso!");
+        setSuccess("Respostas enviadas com sucesso!");
         setShowEnviarButton(false);
         
         // Limpar após sucesso
@@ -288,6 +290,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           setGabarito(null);
           setQuestionCount("");
           setSuccess(null);
+          setShowProcessarButton(false);
         }, 3000);
         
       } else {
@@ -318,7 +321,7 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
       }
 
     } catch (error: any) {
-      console.error("❌ Erro detalhado ao enviar respostas:", error);
+      console.error("Erro detalhado ao enviar respostas:", error);
       
       let errorMessage = "Erro ao enviar as respostas. ";
       
@@ -461,16 +464,14 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </div>
         </div>
 
-        {/* Mensagens de status */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
-            <p className="text-red-600 text-center text-sm">❌ {error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-4">
-            <p className="text-green-600 text-center text-sm">✅ {success}</p>
+        {/* Botão Processar Gabarito - agora invisível inicialmente */}
+        {showProcessarButton && (
+          <div className="mb-4">
+            <Button
+              label={loading ? "Processando..." : "Processar Gabarito"}
+              onClick={handleProcessarGabarito}
+              disabled={loading || !photo}
+            />
           </div>
         )}
 
@@ -491,21 +492,29 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
-          <Button
-            label={loading ? "Processando..." : "Processar Gabarito"}
-            onClick={handleProcessarGabarito}
-            disabled={loading || !photo}
-          />
-
-          {showEnviarButton && (
+        {/* Botão Enviar Respostas */}
+        {showEnviarButton && (
+          <div className="mb-4">
             <Button
               label={loading ? "Enviando..." : "Enviar Respostas"}
               onClick={handleEnviarRespostas}
               disabled={loading}
             />
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Mensagens de status - agora ficam abaixo da tabela/gabarito */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
+            <p className="text-red-600 text-center text-sm">❌ {error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-4">
+            <p className="text-green-600 text-center text-sm">✅ {success}</p>
+          </div>
+        )}
 
         <div className="mt-4 text-center">
           <button 
