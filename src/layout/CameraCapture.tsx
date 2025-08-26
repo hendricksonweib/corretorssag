@@ -400,6 +400,27 @@ const CameraCapture = ({ apiUrl }: CameraCaptureProps) => {
               setError("Erro ao acessar a câmera. Verifique as permissões.");
             }}
           />
+          
+          {/* Moldura intuitiva para alinhamento */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="border-2 border-blue-400 border-dashed rounded-lg w-4/5 h-3/5 relative">
+              {/* Marcadores fiduciais nos cantos */}
+              <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full border-4 border-red-500 bg-white"></div>
+              <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full border-4 border-red-500 bg-white"></div>
+              <div className="absolute -bottom-2 -left-2 w-6 h-6 rounded-full border-4 border-red-500 bg-white"></div>
+              <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-4 border-red-500 bg-white"></div>
+              
+              {/* Guias centrais */}
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-blue-400 opacity-50 transform -translate-y-1/2"></div>
+              <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-blue-400 opacity-50 transform -translate-x-1/2"></div>
+              
+              {/* Texto de instrução */}
+              <div className="absolute -bottom-10 left-0 right-0 text-center text-sm text-blue-700 font-medium">
+                Alinhe os marcadores do gabarito com os círculos vermelhos
+              </div>
+            </div>
+          </div>
+          
           {!cameraReady && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <p className="text-white">Carregando câmera...</p>
